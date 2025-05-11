@@ -1,0 +1,103 @@
+/* toimage.css */
+
+/* Container for the converter page */
+.container {
+  max-width: 600px; /* Limit the width for better readability */
+  margin: auto; /* Center the container */
+  padding: 2rem; /* Padding around the content */
+  background-color: #1a1a2e; /* Dark blue background */
+  border-radius: 8px; /* Rounded corners */
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2); /* Subtle shadow */
+}
+
+/* Heading style */
+.heading {
+  color: #ffffff; /* Light green color for the heading */
+  text-align: center; /* Center the heading text */
+  margin-bottom: 1.5rem; /* Space below heading */
+}
+
+/* Wrapper for input and buttons */
+.input-wrapper {
+  display: flex;
+  flex-direction: column; /* Stack input and button vertically */
+  gap: 1rem; /* Space between elements */
+}
+
+/* File input styling */
+input[type="file"] {
+  padding: 12px; /* Padding inside the input */
+  border-radius: 5px; /* Rounded corners */
+  border: 2px solid #32CD32; /* Light green border */
+  background-color: rgba(127, 219, 182, 0.1); /* Slightly transparent light green */
+  color: #32CD32; /* Text color for input */
+  transition: background-color 0.3s, border-color 0.3s; /* Smooth transition for hover effects */
+}
+
+/* File input hover effect */
+input[type="file"]:hover {
+  background-color: rgba(127, 219, 182, 0.2); /* Darker on hover */
+  border-color: #64b49f; /* Darker shade on hover */
+}
+
+/* Button styling */
+button {
+  background-color: #32CD32; /* Light green background */
+  color: #ffffff; /* Dark blue text */
+  padding: 12px 24px; /* Padding for the button */
+  border: none; /* Remove default border */
+  border-radius: 5px; /* Rounded corners */
+  font-size: 1rem; /* Button text size */
+  transition: background-color 0.3s, transform 0.3s; /* Transition effects for hover */
+  cursor: pointer; /* Show pointer cursor on hover */
+}
+
+/* Button hover effect */
+button:hover {
+  background-color: rgba(127, 219, 182, 0.9); /* Darker on hover */
+  transform: scale(1.05); /* Scale effect on hover */
+}
+
+/* Disabled button styling */
+button:disabled {
+  opacity: 0.6; /* Dim disabled button */
+  cursor: not-allowed; /* Not-allowed cursor for disabled button */
+}
+
+/* Output styling */
+.output {
+  margin-top: 2rem; /* Space above output section */
+  background-color: rgba(127, 219, 182, 0.1); /* Light background for output */
+  padding: 1rem; /* Padding inside the output section */
+  border-radius: 5px; /* Rounded corners */
+}
+
+/* Output heading style */
+.output h2 {
+  color: #32CD32; /* Light green color for output heading */
+}
+
+/* Output text style */
+.output p {
+  color: white; /* White color for output text */
+}
+
+/* Back button styling */
+.back-button {
+  background-color: transparent; /* Transparent background */
+  color: #32CD32; /* Light green text color */
+  padding: 12px 24px; /* Padding for back button */
+  border: 2px solid #32CD32; /* Light green border */
+  border-radius: 5px; /* Rounded corners */
+  font-size: 1rem; /* Button text size */
+  text-align: center; /* Center text */
+  transition: background-color 0.3s, transform 0.3s; /* Smooth transition effects */
+  display: inline-block; /* Inline block for proper spacing */
+}
+
+/* Back button hover effect */
+.back-button:hover {
+  background-color: #32CD32; /* Light green on hover */
+  color: #1a1a2e; /* Dark blue text color on hover */
+  transform: scale(1.05); /* Scale effect on hover */
+}
