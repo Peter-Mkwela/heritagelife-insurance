@@ -19,13 +19,6 @@ export async function POST(req: Request) {
   const expirationTime = Date.now() + 3600000; // 1 hour expiration
 
   // Save token and expiration time in the database (for later verification)
-  await prisma.passwordReset.create({
-    data: {
-      userId: user.id,
-      resetToken,
-      expiresAt: new Date(expirationTime),
-    },
-  });
 
   // Send email with reset link
   const transporter = nodemailer.createTransport({ /* your email config */ });

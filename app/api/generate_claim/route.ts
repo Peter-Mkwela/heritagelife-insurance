@@ -1,16 +1,13 @@
-//api/generate_claim/route.ts
+import { NextResponse } from 'next/server';
+import prisma from '@/lib/prisma'; // You can use @ if path aliases are set, or use relative path
 
-import { NextApiRequest, NextApiResponse } from 'next';
-import prisma from '../../../lib/prisma';
-
-// Function to generate a claim number
 const generateClaimNumber = async (): Promise<string> => {
   let claimNo = '';
   let isUnique = false;
 
   while (!isUnique) {
-    const randomNumbers = Math.floor(100 + Math.random() * 900); // 3-digit number
-    const randomLetter = String.fromCharCode(65 + Math.floor(Math.random() * 26)); // Random uppercase letter
+    const randomNumbers = Math.floor(100 + Math.random() * 900);
+    const randomLetter = String.fromCharCode(65 + Math.floor(Math.random() * 26));
     claimNo = `C${randomNumbers}${randomLetter}`;
 
     const existingClaim = await prisma.ocrClaim.findUnique({
@@ -18,83 +15,70 @@ const generateClaimNumber = async (): Promise<string> => {
     });
 
     if (!existingClaim) {
-      isUnique = true; // Exit loop if unique
+      isUnique = true;
     }
   }
 
-  return claimNo; // Always returns a valid string
+  return claimNo;
 };
 
-// Function to extract required values from OCR text
 const extractDataFromOcr = (ocrText: string) => {
   const regexes = {
     policyNo: /Policy Number:\s*(\S+)/i,
     deceasedName: /First name of Deceased:\s*([\w\s]+)/i,
     deceasedLastName: /Last name of Deceased:\s*([\w\s]+)/i,
     cause: /Cause of Death:\s*([\w\s]+)/i,
-    DOD: /Date of Death:\s*([\d-\/]+)/i, // Handles dates in formats like YYYY-MM-DD or DD/MM/YYYY
+    DOD: /Date of Death:\s*([\d-\/]+)/i,
   };
 
-  const extractedData = {
+  return {
     policyNo: ocrText.match(regexes.policyNo)?.[1]?.trim() || '',
     deceasedName: ocrText.match(regexes.deceasedName)?.[1]?.trim() || '',
     deceasedLastName: ocrText.match(regexes.deceasedLastName)?.[1]?.trim() || '',
     cause: ocrText.match(regexes.cause)?.[1]?.trim() || '',
     DOD: ocrText.match(regexes.DOD)?.[1]?.trim() || '',
   };
-
-  return extractedData;
 };
 
-export async function POST(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Method Not Allowed' });
-  }
-
-  const { ocrText, filePath } = req.body;
-
-  if (!ocrText || !filePath) {
-    return ({ message: 'OCR text and file path are required' });
-  }
-
+// ✅ App Router-compliant POST method
+export async function POST(req: Request) {
   try {
-    // Extract values from OCR text
-    const extractedData = extractDataFromOcr(ocrText);
+    const body = await req.json();
+    const { ocrText, filePath } = body;
 
-    console.log('Extracted Data:', extractedData);  // Log the extracted data
-
-    if (!extractedData.policyNo || !extractedData.deceasedName || !extractedData.deceasedLastName || !extractedData.cause || !extractedData.DOD) {
-      console.error('Failed to extract all required claim details from OCR text');
-      return res.status(400).json({ message: 'Failed to extract all required claim details from OCR text.' });
+    if (!ocrText || !filePath) {
+      return NextResponse.json({ message: 'OCR text and file path are required' }, { status: 400 });
     }
 
-    // Generate a unique claim number
+    const extractedData = extractDataFromOcr(ocrText);
+
+    if (
+      !extractedData.policyNo ||
+      !extractedData.deceasedName ||
+      !extractedData.deceasedLastName ||
+      !extractedData.cause ||
+      !extractedData.DOD
+    ) {
+      return NextResponse.json({ message: 'Failed to extract all required claim details from OCR text.' }, { status: 400 });
+    }
+
     const claimNo = await generateClaimNumber();
 
-    console.log('Generated Claim Number:', claimNo);  // Log the generated claim number
-
-    // Ensure that the file path is correctly passed as a string
     const claimData = {
       claimNo,
       policyNo: extractedData.policyNo,
       deceasedName: extractedData.deceasedName,
       deceasedLastName: extractedData.deceasedLastName,
       cause: extractedData.cause,
-      DOD: new Date(extractedData.DOD), // Ensure correct date format
-      filePath: filePath as string, // Ensure filePath is passed as a string
+      DOD: new Date(extractedData.DOD),
+      filePath: filePath as string,
     };
 
-    console.log('Claim Data:', claimData);  // Log the claim data to be created
+    const newClaim = await prisma.ocrClaim.create({ data: claimData });
 
-    // Create a new claim in the database
-    const newClaim = await prisma.ocrClaim.create({
-      data: claimData,
-    });
-
-    console.log('New Claim Created:', newClaim);  // Log the created claim
-
-    return res.status(200).json({ message: 'Claim generated successfully', claim: newClaim });
+    return NextResponse.json({ message: 'Claim generated successfully', claim: newClaim }, { status: 200 });
   } catch (error) {
     console.error('Error generating claim:', error);
+    return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
   }
 }

@@ -1,20 +1,29 @@
-//get claim api from id
-import { NextResponse } from "next/server";
-import prisma from '@/lib/prisma';
+import { NextResponse } from 'next/server';
+import prisma from '@/lib/prisma'; // Adjust this import to your prisma path
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET() {
   try {
-    const claim = await prisma.ocrClaim.findUnique({
-      where: { id: parseInt(params.id) },
+    // Fetch all OcrClaims with the necessary fields, including created_at
+    const claims = await prisma.ocrClaim.findMany({
+      select: {
+        id: true,
+        claimNo: true,
+        policyNo: true,
+        deceasedName: true,
+        deceasedLastName: true,
+        cause: true,
+        DOD: true,
+        created_at: true,
+      },
+      orderBy: {
+        created_at: 'desc' 
+      }
     });
 
-    if (!claim) {
-      return NextResponse.json({ error: "Claim not found" }, { status: 404 });
-    }
-
-    return NextResponse.json(claim, { status: 200 });
+    // Return the claims as JSON
+    return NextResponse.json(claims);
   } catch (error) {
-    console.error("ERROR: Fetching claim failed ->", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    console.error("ERROR: Unable to fetch claims", error);
+    return NextResponse.json({ error: "Unable to fetch claims" }, { status: 500 });
   }
 }
