@@ -1,64 +1,110 @@
-'use client'
+"use client";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
-import React from 'react';
+const SendRequestPage = () => {
+  const [message, setMessage] = useState("");
+  const [email, setEmail] = useState<string | null>(null);
+  const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+  const router = useRouter();
 
-const ApproveClaimPage = () => {
-  // Dummy claim data
-  const claims = [
-    { id: 1, claimant: 'John Doe', amount: 500, status: 'Pending' },
-    { id: 2, claimant: 'Jane Smith', amount: 1200, status: 'Pending' },
-    { id: 3, claimant: 'Sam Green', amount: 300, status: 'Pending' },
-  ];
+  // Retrieve the policyholder's email from localStorage when the component mounts
+  useEffect(() => {
+    const storedEmail = localStorage.getItem("policyholderEmail");
+    console.log("Retrieved email:", storedEmail);
+    if (storedEmail) {
+      setEmail(storedEmail);
+    } else {
+      setError("No policyholder email found. Please log in again.");
+    }
+  }, []);
 
-  // Function to handle claim approval
-  const handleApprove = (claimId: number) => {
-    console.log(`Claim ${claimId} has been approved.`);
-    // Here you would typically update the claim status and persist it
+  // Handle sending the message
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!message) {
+      setError("Please enter a message.");
+      return;
+    }
+
+    if (!email) {
+      setError("No email found. Please log in again.");
+      return;
+    }
+
+    const requestData = {
+      email, // Include the policyholder's email
+      message,
+    };
+
+    try {
+      const res = await fetch("/api/send_request", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestData),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        setSuccessMessage("Your request has been sent successfully!");
+        setError("");
+        setMessage("");
+      } else {
+        setError(data.message);
+      }
+    } catch (error) {
+      setError("Error sending the request.");
+    }
+  };
+
+  // Handle back navigation
+  const handleBack = () => {
+    router.push("/policyholder/main"); // Change to the correct path for policyholder dashboard
   };
 
   return (
-    <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
-      <h1>Approve Claims</h1>
-      <p>Review and approve pending claims below.</p>
+    <div className="users-container">
+      <header className="style-strip">
+        <h1 className="header-title">Send a Query to the System Administrator</h1>
+      </header>
 
-      <table style={{ width: '100%', marginTop: '20px', borderCollapse: 'collapse' }}>
-        <thead>
-          <tr>
-            <th style={{ borderBottom: '1px solid #ccc', padding: '10px' }}>Claim ID</th>
-            <th style={{ borderBottom: '1px solid #ccc', padding: '10px' }}>Claimant</th>
-            <th style={{ borderBottom: '1px solid #ccc', padding: '10px' }}>Amount</th>
-            <th style={{ borderBottom: '1px solid #ccc', padding: '10px' }}>Status</th>
-            <th style={{ borderBottom: '1px solid #ccc', padding: '10px' }}>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {claims.map((claim) => (
-            <tr key={claim.id}>
-              <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>{claim.id}</td>
-              <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>{claim.claimant}</td>
-              <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>${claim.amount}</td>
-              <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>{claim.status}</td>
-              <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>
-                <button
-                  onClick={() => handleApprove(claim.id)}
-                  style={{
-                    backgroundColor: '#32CD32',
-                    color: 'white',
-                    border: 'none',
-                    padding: '8px 12px',
-                    cursor: 'pointer',
-                    borderRadius: '4px',
-                  }}
-                >
-                  Approve
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      {error && <p className="error-message">{error}</p>}
+      {successMessage && <p className="success-message">{successMessage}</p>}
+
+      <div className="form container">
+        <form onSubmit={handleSubmit} className="send-request-form">
+          <div className="form-group">
+            <label htmlFor="message" className="form-label">
+              Your Message:
+            </label>
+            <textarea
+              id="message"
+              className="form-input"
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="Enter your query here..."
+              rows={5}
+              required
+            />
+          </div>
+
+          <div className="button-group">
+            <button type="submit" className="back-button">
+              Send Request
+            </button>
+            <button type="button" onClick={handleBack} className="back-button">
+              Back
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 };
 
-export default ApproveClaimPage;
+export default SendRequestPage;

@@ -61,10 +61,12 @@ export async function POST(req: Request) {
     );
   }
 
+  // Return the agent_id along with the response data
   return NextResponse.json({
     message: 'Login successful',
     role: user.role,
     token: 'jwt-token-here',
     intendedRoute: cleanIntendedRoute,
+    agent_id: user.id, // Include the agent_id in the response
   });
 }

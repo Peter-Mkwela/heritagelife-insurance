@@ -1,64 +1,108 @@
 'use client'
+import { useEffect, useState } from 'react';
 
-import React from 'react';
+type User = {
+  id: number;
+  username: string;
+  email: string;
+  full_name: string;
+  role: string;
+};
 
-const ApproveClaimPage = () => {
-  // Dummy claim data
-  const claims = [
-    { id: 1, claimant: 'John Doe', amount: 500, status: 'Pending' },
-    { id: 2, claimant: 'Jane Smith', amount: 1200, status: 'Pending' },
-    { id: 3, claimant: 'Sam Green', amount: 300, status: 'Pending' },
-  ];
+const UsersPage = () => {
+  const [users, setUsers] = useState<User[]>([]);
+  const [error, setError] = useState<string>('');
+  const [successMessage, setSuccessMessage] = useState<string>('');
 
-  // Function to handle claim approval
-  const handleApprove = (claimId: number) => {
-    console.log(`Claim ${claimId} has been approved.`);
-    // Here you would typically update the claim status and persist it
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const res = await fetch('/api/get_users');
+        const data = await res.json();
+        if (res.ok) {
+          setUsers(data.users);
+        } else {
+          setError(data.message);
+        }
+      } catch (err) {
+        setError('Failed to fetch users');
+      }
+    };
+
+    fetchUsers();
+  }, []);
+
+  const handleDeleteUser = async (id: number) => {
+    try {
+      const res = await fetch('/api/delete_user', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ id }),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setSuccessMessage('User deleted successfully');
+        setUsers(users.filter(user => user.id !== id)); // Remove the user from the list
+      } else {
+        setError(data.message);
+      }
+    } catch (err) {
+      setError('Failed to delete user');
+    }
+  };
+
+  const handleBack = () => {
+    // Navigate to IT Admin dashboard or the previous page
+    window.history.back();
   };
 
   return (
-    <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
-      <h1>Approve Claims</h1>
-      <p>Review and approve pending claims below.</p>
+    <div className="users-container">
+            {/* Header Strip */}
+            <header className="style-strip">
+        <h1 className="header-title">Manage Users</h1>
+        <div className="button-container">
+          <button onClick={handleBack} className="back-button">
+            Back
+          </button>
+        </div>
+      </header>
+      {successMessage && <p className="success-message">{successMessage}</p>}
+      {error && <p className="error-message">{error}</p>}
 
-      <table style={{ width: '100%', marginTop: '20px', borderCollapse: 'collapse' }}>
-        <thead>
-          <tr>
-            <th style={{ borderBottom: '1px solid #ccc', padding: '10px' }}>Claim ID</th>
-            <th style={{ borderBottom: '1px solid #ccc', padding: '10px' }}>Claimant</th>
-            <th style={{ borderBottom: '1px solid #ccc', padding: '10px' }}>Amount</th>
-            <th style={{ borderBottom: '1px solid #ccc', padding: '10px' }}>Status</th>
-            <th style={{ borderBottom: '1px solid #ccc', padding: '10px' }}>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {claims.map((claim) => (
-            <tr key={claim.id}>
-              <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>{claim.id}</td>
-              <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>{claim.claimant}</td>
-              <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>${claim.amount}</td>
-              <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>{claim.status}</td>
-              <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>
-                <button
-                  onClick={() => handleApprove(claim.id)}
-                  style={{
-                    backgroundColor: '#32CD32',
-                    color: 'white',
-                    border: 'none',
-                    padding: '8px 12px',
-                    cursor: 'pointer',
-                    borderRadius: '4px',
-                  }}
-                >
-                  Approve
-                </button>
-              </td>
+      <div className="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Username</th>
+              <th>Email</th>
+              <th>Full Name</th>
+              <th>Role</th>
+              <th>Actions</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {users.map(user => (
+              <tr key={user.id}>
+                <td>{user.username}</td>
+                <td>{user.email}</td>
+                <td>{user.full_name}</td>
+                <td>{user.role}</td>
+                <td>
+                  <button onClick={() => handleDeleteUser(user.id)} className="delete-button">
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };
 
-export default ApproveClaimPage;
+export default UsersPage;

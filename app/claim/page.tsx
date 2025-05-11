@@ -1,9 +1,7 @@
-// app/converter/page.tsx
-
 "use client";
 
 import { useState } from "react";
-import Tesseract from "tesseract.js";
+import axios from "axios";
 import "./toimage.css";
 import Link from 'next/link';
 
@@ -11,27 +9,43 @@ const ConverterPage = () => {
   const [image, setImage] = useState<File | null>(null);
   const [text, setText] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string>("");
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       setImage(file);
       setText("");
+      setError("");
     }
   };
 
   const convertImageToText = async () => {
     if (!image) return;
     setLoading(true);
+    setError("");
+
+    const formData = new FormData();
+    formData.append("file", image);
+    formData.append("apikey", "K89337592188957");  // Replace with your API key
+    formData.append("language", "eng");
+
     try {
-      const result = await Tesseract.recognize(URL.createObjectURL(image), "eng", {
-        logger: (m) => console.log(m),
+      const response = await axios.post("https://api.ocr.space/parse/image", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
       });
-      setText(result.data.text);
+
+      if (response.data.IsErroredOnProcessing) {
+        setError("Error during OCR processing.");
+      } else {
+        setText(response.data.ParsedResults[0].ParsedText);
+      }
     } catch (error) {
-      console.error("Error during OCR process:", error);
-      setText("Failed, check your internet connection");
+      setError("Failed, check your internet connection.");
     }
+
     setLoading(false);
   };
 
@@ -41,7 +55,7 @@ const ConverterPage = () => {
       <div className="input-wrapper">
         <input
           type="file"
-          accept="image/*"
+          accept="image/*, application/pdf"
           onChange={handleFileChange}
         />
         <button onClick={convertImageToText} disabled={!image || loading}>
@@ -53,6 +67,12 @@ const ConverterPage = () => {
       <Link href="/" className="back-button mt-4">
         Back to Home
       </Link>
+
+      {error && (
+        <div className="error">
+          <p>{error}</p>
+        </div>
+      )}
 
       {text && (
         <div className="output">

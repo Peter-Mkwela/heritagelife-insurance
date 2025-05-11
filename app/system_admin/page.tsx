@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 
 const SystemAdminLanding: React.FC = () => {
@@ -10,19 +10,32 @@ const SystemAdminLanding: React.FC = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const router = useRouter();
-  const pathname = usePathname(); // This will capture the /system_admin path
+  const pathname = usePathname();
 
-  // Capture the intended route directly as /system_admin (no need to go to /login anymore)
   const intendedRoute = '/system_admin';
+
+  useEffect(() => {
+    // ⛔ Ensure nothing is rendered until this runs
+    const token = localStorage.getItem('auth_token');
+    const role = localStorage.getItem('role')?.toLowerCase();
+
+    if (token && role === 'system_admin') {
+      setIsAuthenticated(true);
+    } else {
+      setIsAuthenticated(false);
+    }
+
+    setLoading(false); // ✅ Unlock the page only after checking
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(''); // Clear any previous errors
+    setError('');
 
     const res = await fetch('/api/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password, intendedRoute }), // Send the intended route
+      body: JSON.stringify({ username, password, intendedRoute }),
     });
 
     const data = await res.json();
@@ -31,48 +44,26 @@ const SystemAdminLanding: React.FC = () => {
       const role = data.role?.toLowerCase();
       localStorage.setItem('auth_token', data.token);
       localStorage.setItem('role', role);
-      setIsAuthenticated(true); // Set the user as authenticated
+      setIsAuthenticated(true);
     } else {
       setError(data.error || 'Login failed');
     }
   };
 
   const handleLogout = () => {
-    // Clear the local storage
     localStorage.removeItem('auth_token');
     localStorage.removeItem('role');
-    
-    // Reset the authentication state
     setIsAuthenticated(false);
-    setUsername(''); // Clear username input field
-    setPassword(''); // Clear password input field
-  
-    // Redirect to the blank login page (ensure the route is correct for your project)
-    router.push('/system_admin'); // Make sure '/login' is the route to your blank login page
+    setUsername('');
+    setPassword('');
+    router.push('/system_admin');
   };
-  
+
   const handleHomeRedirect = () => {
-    router.push('/'); // Navigate to the homepage
+    router.push('/');
   };
 
-  // Check authentication when the page is loaded
-  useEffect(() => {
-    const checkAuth = () => {
-      const token = localStorage.getItem('auth_token');
-      const role = localStorage.getItem('role')?.toLowerCase();
-
-      if (token && role === 'system_admin') {
-        setIsAuthenticated(true); // Allow access if the role matches
-      } else {
-        setIsAuthenticated(false); // Deny access if no valid token or role
-      }
-
-      setLoading(false); // Done loading
-    };
-
-    checkAuth();
-  }, []);
-
+  // ✅ Prevent anything from rendering before auth is checked
   if (loading) {
     return (
       <div className="loading-container">
@@ -81,11 +72,12 @@ const SystemAdminLanding: React.FC = () => {
     );
   }
 
+  // 🚪 Not authenticated: Show login form
   if (!isAuthenticated) {
     return (
       <div className="policy-container">
         <div className="login-form-container">
-        <h1 className="policy-heading">Login to Your Account</h1>
+          <h1 className="policy-heading">Login to Your Account</h1>
           <p className="description">Please enter your credentials to log in.</p>
           <form onSubmit={handleSubmit}>
             <div className="input-group">
@@ -123,42 +115,44 @@ const SystemAdminLanding: React.FC = () => {
         </div>
       </div>
     );
-    
   }
 
-  // If authenticated, show the system admin landing page
+  // ✅ Authenticated: Show dashboard
   const operations = [
-    { id: 1, name: 'Add Beneficiary', route: '/system_admin/add_beneficiary' },
-    { id: 2, name: 'Remove Beneficiary', route: '/system_admin/remove_beneficiary' },
+    { id: 1, name: 'Policy Application', route: '/system_admin/policy_application' },
+    { id: 2, name: 'Queries', route: '/system_admin/queries' },
     { id: 3, name: 'Cancel Policy', route: '/system_admin/cancel_policy' },
     { id: 4, name: 'Process Claim', route: '/system_admin/process_claim' },
     { id: 5, name: 'Modify Policy', route: '/system_admin/modify_policy' },
-    { id: 6, name: 'Logout', route: '/', action: handleLogout },
+    { id: 6, name: 'Generated Claims', route: '/system_admin/view-all-claims' },
+    { id: 7, name: 'Generated Applications', route: '/system_admin/view-all-applications' },
+    { id: 8, name: 'Beneficiaries', route: '/system_admin/beneficiaries_page' },
+    { id: 9, name: 'Exit', route: '/', action: handleLogout },
   ];
 
   return (
     <div className="system-admin-landing">
-      <header className="landing-header">
-        <h1 className='header-title'>System Administrator Portal</h1>
+      <header className="header-strip">
+        <h1 className="header-title">System Admin Portal</h1>
       </header>
 
       <main className="operations-section">
-        <h2 className='operations-title'>Choose an Operation</h2>
-        <div className="operations-grid">
+        <h2 className="operations-title">Choose an Operation</h2>
+        <div className="operations-row">
           {operations.map((operation) => (
             <button
               key={operation.id}
               onClick={operation.action || (() => router.push(operation.route))}
               className="operation-item"
             >
-              <h3 className='operation-name'>{operation.name}</h3>
+              <h3 className="operation-name">{operation.name}</h3>
             </button>
           ))}
         </div>
       </main>
 
-      <footer className="footer">
-        &copy; {new Date().getFullYear()} Insurance Portal. All rights reserved.
+      <footer className="footer-strip">
+        <p>&copy; {new Date().getFullYear()} Insurance Portal. All rights reserved.</p>
       </footer>
     </div>
   );

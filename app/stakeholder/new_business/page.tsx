@@ -1,64 +1,86 @@
-'use client'
+'use client';
 
-import React from 'react';
+import { useEffect, useState } from 'react';
 
-const ApproveClaimPage = () => {
-  // Dummy claim data
-  const claims = [
-    { id: 1, claimant: 'John Doe', amount: 500, status: 'Pending' },
-    { id: 2, claimant: 'Jane Smith', amount: 1200, status: 'Pending' },
-    { id: 3, claimant: 'Sam Green', amount: 300, status: 'Pending' },
-  ];
+type NewBusiness = {
+  applicationNo: string;
+  fullName: string;
+  preferredPremium: string;
+  created_at: string;
+};
 
-  // Function to handle claim approval
-  const handleApprove = (claimId: number) => {
-    console.log(`Claim ${claimId} has been approved.`);
-    // Here you would typically update the claim status and persist it
+const ViewNewBusinessPage = () => {
+  const [newBusiness, setNewBusiness] = useState<NewBusiness[]>([]);
+  const [error, setError] = useState<string>("");
+  const [days, setDays] = useState<number>(30);
+
+  useEffect(() => {
+    const fetchNewBusiness = async () => {
+      try {
+        const res = await fetch(`/api/get_new_business?days=${days}`);
+        const data = await res.json();
+        if (res.ok) {
+          setNewBusiness(data.newBusiness);
+        } else {
+          setError(data.message);
+        }
+      } catch (err) {
+        setError("Error fetching new business data");
+      }
+    };
+
+    fetchNewBusiness();
+  }, [days]);
+  const handleBack = () => {
+    window.history.back();
   };
-
   return (
-    <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
-      <h1>Approve Claims</h1>
-      <p>Review and approve pending claims below.</p>
+    <div className="new-business-container">
+      <header className="style-strip">
+        <h1 className="header-title">View New Business</h1>
+        <div className="button-container">
+          <button onClick={handleBack} className="back-button">
+            Back
+          </button>
+        </div>
+      </header>
 
-      <table style={{ width: '100%', marginTop: '20px', borderCollapse: 'collapse' }}>
-        <thead>
-          <tr>
-            <th style={{ borderBottom: '1px solid #ccc', padding: '10px' }}>Claim ID</th>
-            <th style={{ borderBottom: '1px solid #ccc', padding: '10px' }}>Claimant</th>
-            <th style={{ borderBottom: '1px solid #ccc', padding: '10px' }}>Amount</th>
-            <th style={{ borderBottom: '1px solid #ccc', padding: '10px' }}>Status</th>
-            <th style={{ borderBottom: '1px solid #ccc', padding: '10px' }}>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {claims.map((claim) => (
-            <tr key={claim.id}>
-              <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>{claim.id}</td>
-              <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>{claim.claimant}</td>
-              <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>${claim.amount}</td>
-              <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>{claim.status}</td>
-              <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>
-                <button
-                  onClick={() => handleApprove(claim.id)}
-                  style={{
-                    backgroundColor: '#32CD32',
-                    color: 'white',
-                    border: 'none',
-                    padding: '8px 12px',
-                    cursor: 'pointer',
-                    borderRadius: '4px',
-                  }}
-                >
-                  Approve
-                </button>
-              </td>
+      {error && <p className="error-message">{error}</p>}
+
+      <div className="filter-container">
+        <label htmlFor="days">Show registrations from the last: </label>
+        <select id="days" value={days} onChange={(e) => setDays(Number(e.target.value))}>
+          <option value={7}>7 days</option>
+          <option value={15}>15 days</option>
+          <option value={30}>30 days</option>
+          <option value={60}>60 days</option>
+        </select>
+      </div>
+
+      <div className="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Application No</th>
+              <th>Full Name</th>
+              <th>Preferred Premium</th>
+              <th>Created At</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {newBusiness.map((business) => (
+              <tr key={business.applicationNo}>
+                <td>{business.applicationNo}</td>
+                <td>{business.fullName}</td>
+                <td>${business.preferredPremium}</td>
+                <td>{new Date(business.created_at).toLocaleDateString()}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };
 
-export default ApproveClaimPage;
+export default ViewNewBusinessPage;

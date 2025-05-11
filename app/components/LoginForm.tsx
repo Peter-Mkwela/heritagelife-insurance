@@ -1,4 +1,4 @@
-"use client";
+// components/LoginForm.tsx
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -8,19 +8,8 @@ const LoginForm = () => {
     email: "",
     password: "",
   });
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
-
-  // Define roles-to-routes mapping
-  const rolesToRoutes = {
-    policyholder: "/policyholder/main",
-    agent: "/agent/main",
-    system_admin: "/system_admin/main",
-    stakeholder: "/stakeholder/main",
-    it_admin: "/it_admin/main",
-  } as const;
-
-  // Extract valid roles from rolesToRoutes
-  type UserRole = keyof typeof rolesToRoutes;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -33,61 +22,57 @@ const LoginForm = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Simulate backend login and response with a role
-    // Replace this mock response with actual backend logic
-    const mockResponse = {
-      email: formData.email,
-      role: "agent", // Simulate role (this would come from your backend)
-    };
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
 
-    // Ensure the role is valid and matches one of the defined routes
-    const userRole = mockResponse.role as UserRole;
+      const result = await response.json();
 
-    if (rolesToRoutes[userRole]) {
-      const redirectRoute = rolesToRoutes[userRole];
-      router.push(redirectRoute); // Redirect to the corresponding main page
-    } else {
-      alert("Unknown user role. Please contact support.");
+      if (response.ok) {
+        // Store the email in localStorage
+        localStorage.setItem("policyholderEmail", result.email);
+        console.log("Stored Email:", result.email);
+        router.push("/policyholder/main"); // Navigate to the main page
+      } else {
+        setError(result.message || "Invalid email or password.");
+      }
+    } catch (error) {
+      setError("An error occurred. Please try again.");
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-      <div className="login-signup-input-group">
-        <label htmlFor="email" className="block text-darkBlue text-lg font-semibold mb-2">
-          Email Address
-        </label>
+    <form onSubmit={handleSubmit}>
+      <div className="input-group">
+        <label htmlFor="email">Email Address :</label>
         <input
-          type="email"
           id="email"
+          type="email"
           name="email"
           value={formData.email}
           onChange={handleChange}
           required
-          className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring focus:ring-lightGreen focus:outline-none"
         />
       </div>
-
-      <div className="login-signup-input-group">
-        <label htmlFor="password" className="block text-darkBlue text-lg font-semibold mb-2">
-          Password
-        </label>
+      <div className="input-group">
+        <label htmlFor="password">Password :</label>
         <input
-          type="password"
           id="password"
+          type="password"
           name="password"
           value={formData.password}
           onChange={handleChange}
           required
-          className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring focus:ring-lightGreen focus:outline-none"
         />
       </div>
-
-      <button
-        type="submit"
-        className="login-signup-cta-button hover:bg-[#28a745]"
-      >
-        Log In
+      {error && <p className="error-message">{error}</p>}
+      <button type="submit" className="cta-button cta-button-login">
+        Login
       </button>
     </form>
   );

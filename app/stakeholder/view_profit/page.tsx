@@ -1,64 +1,87 @@
-'use client'
+'use client';
 
-import React from 'react';
+import { useEffect, useState } from 'react';
 
-const ApproveClaimPage = () => {
-  // Dummy claim data
-  const claims = [
-    { id: 1, claimant: 'John Doe', amount: 500, status: 'Pending' },
-    { id: 2, claimant: 'Jane Smith', amount: 1200, status: 'Pending' },
-    { id: 3, claimant: 'Sam Green', amount: 300, status: 'Pending' },
-  ];
+type Profit = {
+  policyType: string;  // Month Name (e.g., "January 2025")
+  totalPremiums: number;
+  totalClaims: number;
+  netProfit: number;
+};
 
-  // Function to handle claim approval
-  const handleApprove = (claimId: number) => {
-    console.log(`Claim ${claimId} has been approved.`);
-    // Here you would typically update the claim status and persist it
+const ProfitsPage = () => {
+  const [profits, setProfits] = useState<Profit[]>([]);
+  const [error, setError] = useState<string>('');
+  const [year, setYear] = useState<number>(new Date().getFullYear()); // Default to current year
+
+  useEffect(() => {
+    const fetchProfits = async () => {
+      try {
+        const res = await fetch(`/api/get_profits?year=${year}`);
+        const data = await res.json();
+        if (res.ok) {
+          setProfits(data.profits);
+        } else {
+          setError(data.message);
+        }
+      } catch (err) {
+        setError('Error fetching profits');
+      }
+    };
+
+    fetchProfits();
+  }, [year]); // Refetch when the year changes
+
+  const handleBack = () => {
+    window.history.back();
   };
 
   return (
-    <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
-      <h1>Approve Claims</h1>
-      <p>Review and approve pending claims below.</p>
+    <div className="profits-container">
+      <header className="style-strip">
+        <h1 className="header-title">Business Profits</h1>
+        <div className="button-container">
+          <button onClick={handleBack} className="back-button">
+            Back
+          </button>
+        </div>
+      </header>
 
-      <table style={{ width: '100%', marginTop: '20px', borderCollapse: 'collapse' }}>
-        <thead>
-          <tr>
-            <th style={{ borderBottom: '1px solid #ccc', padding: '10px' }}>Claim ID</th>
-            <th style={{ borderBottom: '1px solid #ccc', padding: '10px' }}>Claimant</th>
-            <th style={{ borderBottom: '1px solid #ccc', padding: '10px' }}>Amount</th>
-            <th style={{ borderBottom: '1px solid #ccc', padding: '10px' }}>Status</th>
-            <th style={{ borderBottom: '1px solid #ccc', padding: '10px' }}>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {claims.map((claim) => (
-            <tr key={claim.id}>
-              <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>{claim.id}</td>
-              <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>{claim.claimant}</td>
-              <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>${claim.amount}</td>
-              <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>{claim.status}</td>
-              <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>
-                <button
-                  onClick={() => handleApprove(claim.id)}
-                  style={{
-                    backgroundColor: '#32CD32',
-                    color: 'white',
-                    border: 'none',
-                    padding: '8px 12px',
-                    cursor: 'pointer',
-                    borderRadius: '4px',
-                  }}
-                >
-                  Approve
-                </button>
-              </td>
-            </tr>
+      {error && <p className="error-message">{error}</p>}
+
+      <div className="filter-container">
+        <label htmlFor="year">Select Year:</label>
+        <select id="year" value={year} onChange={e => setYear(Number(e.target.value))}>
+          {[2023, 2024, 2025, 2026].map((yr) => (
+            <option key={yr} value={yr}>{yr}</option>
           ))}
-        </tbody>
-      </table>
+        </select>
+      </div>
+
+      <div className="profits-table-container">
+        <table className="profits-table">
+          <thead>
+            <tr>
+              <th>Month</th>
+              <th>Total Premiums ($)</th>
+              <th>Total Claims Paid ($)</th>
+              <th>Net Profit ($)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {profits.map((profit, index) => (
+              <tr key={index}>
+                <td>{profit.policyType}</td>
+                <td>${profit.totalPremiums.toFixed(2)}</td>
+                <td>${profit.totalClaims.toFixed(2)}</td>
+                <td>${profit.netProfit.toFixed(2)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };
 
-export default ApproveClaimPage;
+export default ProfitsPage;

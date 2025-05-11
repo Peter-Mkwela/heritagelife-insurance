@@ -18,7 +18,10 @@ const ApproveClaimPage = () => {
 
   return (
     <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
-      <h1>Approve Claims</h1>
+                  {/* Header Strip */}
+                  <header className="style-strip">
+        <h1 className="header-title">Approve Claims</h1>
+      </header>
       <p>Review and approve pending claims below.</p>
 
       <table style={{ width: '100%', marginTop: '20px', borderCollapse: 'collapse' }}>

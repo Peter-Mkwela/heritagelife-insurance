@@ -1,64 +1,139 @@
-'use client'
+"use client";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
-import React from 'react';
+const ViewPolicyPage = () => {
+  const [policyData, setPolicyData] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
-const ApproveClaimPage = () => {
-  // Dummy claim data
-  const claims = [
-    { id: 1, claimant: 'John Doe', amount: 500, status: 'Pending' },
-    { id: 2, claimant: 'Jane Smith', amount: 1200, status: 'Pending' },
-    { id: 3, claimant: 'Sam Green', amount: 300, status: 'Pending' },
-  ];
+  useEffect(() => {
+    const email = localStorage.getItem("policyholderEmail");
+    if (!email) {
+      setError("You are not logged in.");
+      return;
+    }
 
-  // Function to handle claim approval
-  const handleApprove = (claimId: number) => {
-    console.log(`Claim ${claimId} has been approved.`);
-    // Here you would typically update the claim status and persist it
+    setLoading(true);
+    fetchPolicyDetails(email);
+  }, []);
+
+  const fetchPolicyDetails = async (email: string) => {
+    try {
+      const res = await fetch("/api/get-policy-details", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        setPolicyData(data.policyholder);
+      } else {
+        setError(data.message);
+      }
+    } catch (err) {
+      setError("Error fetching policy details.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  return (
-    <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
-      <h1>Approve Claims</h1>
-      <p>Review and approve pending claims below.</p>
+  if (loading) return <p>Loading...</p>;
+  if (error) return <p className="error-message">{error}</p>;
 
-      <table style={{ width: '100%', marginTop: '20px', borderCollapse: 'collapse' }}>
-        <thead>
-          <tr>
-            <th style={{ borderBottom: '1px solid #ccc', padding: '10px' }}>Claim ID</th>
-            <th style={{ borderBottom: '1px solid #ccc', padding: '10px' }}>Claimant</th>
-            <th style={{ borderBottom: '1px solid #ccc', padding: '10px' }}>Amount</th>
-            <th style={{ borderBottom: '1px solid #ccc', padding: '10px' }}>Status</th>
-            <th style={{ borderBottom: '1px solid #ccc', padding: '10px' }}>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {claims.map((claim) => (
-            <tr key={claim.id}>
-              <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>{claim.id}</td>
-              <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>{claim.claimant}</td>
-              <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>${claim.amount}</td>
-              <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>{claim.status}</td>
-              <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>
-                <button
-                  onClick={() => handleApprove(claim.id)}
-                  style={{
-                    backgroundColor: '#32CD32',
-                    color: 'white',
-                    border: 'none',
-                    padding: '8px 12px',
-                    cursor: 'pointer',
-                    borderRadius: '4px',
-                  }}
-                >
-                  Approve
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+  return (
+    <div>
+      <header className="style-strip">
+        <h1 className="header-title">View Your Policy</h1>
+        <div className="button-container">
+          <button onClick={() => window.history.back()} className="back-button">
+            Back
+          </button>
+        </div>
+      </header>
+  
+      {loading && <p>Loading...</p>}
+      {error && <p className="error-message">{error}</p>}
+  
+      {policyData?.policies?.length > 0 ? (
+        <>
+          <div className="table-container">
+            <h2 className="headingss">Policy Details</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Policy Number</th>
+                  <th>Full Name</th>
+                  <th>Email</th>
+                  <th>Date of Birth</th>
+                  <th>Phone</th>
+                  <th>Created At</th>
+                </tr>
+              </thead>
+              <tbody>
+                {policyData.policies.map((policy: any) => (
+                  <tr key={policy.id}>
+                    <td>{policy.policy_number}</td>
+                    <td>{policy.fullName}</td>
+                    <td>{policy.email}</td>
+                    <td>{new Date(policy.dateOfBirth).toLocaleDateString()}</td>
+                    <td>{policy.phone}</td>
+                    <td>{new Date(policy.created_at).toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+  
+          <div className="table-container">
+            <h2 className="headingss">Beneficiaries</h2>
+            {policyData.beneficiaries.length > 0 ? (
+              <table>
+                <thead>
+                  <tr>
+                    <th>Full Name</th>
+                    <th>Relationship</th>
+                    <th>Date of Birth</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {policyData.beneficiaries.map((b: any) => (
+                    <tr key={b.id}>
+                      <td>{b.fullName}</td>
+                      <td>{b.relationship}</td>
+                      <td>{new Date(b.dateOfBirth).toLocaleDateString()}</td>
+                      <td>
+                        <span
+                          className={
+                            b.status === "Approved"
+                              ? "approved-status"
+                              : b.status === "Rejected"
+                              ? "rejected-status"
+                              : "pending-status"
+                          }
+                        >
+                          {b.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <p>No beneficiaries added yet.</p>
+            )}
+          </div>
+        </>
+      ) : (
+        <p>No policies found.</p>
+      )}
     </div>
   );
+  
 };
 
-export default ApproveClaimPage;
+export default ViewPolicyPage;

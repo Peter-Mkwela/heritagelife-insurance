@@ -3,16 +3,15 @@
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 
-const SystemAdminLanding: React.FC = () => {
+const AgentLanding: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const router = useRouter();
-  const pathname = usePathname(); // This will capture the /system_admin path
+  const pathname = usePathname(); 
 
-  // Capture the intended route directly as /system_admin (no need to go to /login anymore)
   const intendedRoute = '/agent';
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -31,6 +30,7 @@ const SystemAdminLanding: React.FC = () => {
       const role = data.role?.toLowerCase();
       localStorage.setItem('auth_token', data.token);
       localStorage.setItem('role', role);
+      localStorage.setItem('agent_id', data.agent_id); // Store agent_id in localStorage
       setIsAuthenticated(true); // Set the user as authenticated
     } else {
       setError(data.error || 'Login failed');
@@ -41,6 +41,7 @@ const SystemAdminLanding: React.FC = () => {
     // Clear the local storage
     localStorage.removeItem('auth_token');
     localStorage.removeItem('role');
+    localStorage.removeItem('agent_id'); // Remove agent_id from localStorage
     
     // Reset the authentication state
     setIsAuthenticated(false);
@@ -123,7 +124,6 @@ const SystemAdminLanding: React.FC = () => {
         </div>
       </div>
     );
-    
   }
 
   // If authenticated, show the system admin landing page
@@ -131,35 +131,37 @@ const SystemAdminLanding: React.FC = () => {
     { id: 1, name: "Register Person", route: "/agent/register" },
     { id: 2, name: "Track Business", route: "/agent/business" },
     { id: 3, name: "View Commission", route: "/agent/commission" },
-    { id: 4, name: 'Logout', route: '/', action: handleLogout },
+    { id: 4, name: 'Exit', route: '/', action: handleLogout },
   ];
 
   return (
     <div className="system-admin-landing">
-      <header className="landing-header">
-        <h1 className='header-title'>Agent Portal</h1>
+      {/* Header Strip */}
+      <header className="header-strip">
+        <h1 className="header-title">Agent Portal</h1>
       </header>
 
       <main className="operations-section">
-        <h2 className='operations-title'>Choose an Operation</h2>
-        <div className="operations-grid">
-          {operations.map((operation) => (
-            <button
-              key={operation.id}
-              onClick={operation.action || (() => router.push(operation.route))}
-              className="operation-item"
-            >
-              <h3 className='operation-name'>{operation.name}</h3>
-            </button>
-          ))}
-        </div>
-      </main>
+  <h2 className="operations-title">Choose an Operation</h2>
+  <div className="operations-row">
+    {operations.map((operation) => (
+      <button
+        key={operation.id}
+        onClick={operation.action || (() => router.push(operation.route))}
+        className="operation-item"
+      >
+        <h3 className="operation-name">{operation.name}</h3>
+      </button>
+    ))}
+  </div>
+</main>
 
-      <footer className="footer">
-        &copy; {new Date().getFullYear()} Insurance Portal. All rights reserved.
+      {/* Footer Strip */}
+      <footer className="footer-strip">
+        <p>&copy; {new Date().getFullYear()} Insurance Portal. All rights reserved.</p>
       </footer>
     </div>
   );
 };
 
-export default SystemAdminLanding;
+export default AgentLanding;

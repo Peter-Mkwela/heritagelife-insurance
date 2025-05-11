@@ -14,14 +14,23 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid()) // Unique identifier for the user.
-  username  String   @unique @db.VarChar(50) // Unique username for login.
-  email     String   @unique @db.VarChar(255) // User's email address.
-  password  String   @db.VarChar(255) // Encrypted password for authentication.
-  role      Role     // User role (IT_ADMIN, SYSTEM_ADMIN, etc.).
-  full_name String?  @db.VarChar(100) // User's full name.
-  created_at DateTime @default(now()) // Timestamp for when the user was added.
+  id         Int      @id @default(autoincrement()) 
+  username   String   @unique @db.VarChar(50) 
+  email      String   @unique @db.VarChar(255) 
+  password   String   @db.VarChar(255) 
+  role       Role
+  full_name  String?  @db.VarChar(100) 
+  created_at DateTime @default(now()) 
+
+  // One agent can have multiple applications
+  applications OcrApplication[] @relation("AgentApplications")
+
+  // One-to-Many Relation: One agent can have many policyholders
+  registeredPolicyholders PolicyHolder[] @relation("AgentToPolicyHolder")
+
+  Policy Policy[]
 }
+
 
 // Role Enum for user roles
 enum Role {
@@ -31,3 +40,139 @@ enum Role {
   AGENT
   POLICYHOLDER
 }
+
+model PolicyHolder {
+  id         Int      @id @default(autoincrement())
+  email      String   @unique @db.VarChar(255)
+  password   String   @db.VarChar(255)
+  full_name  String   @db.VarChar(100)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  agent_id   Int?   // Nullable because some policyholders may register directly
+  agent      User?  @relation(fields: [agent_id], references: [id], name: "AgentToPolicyHolder")
+
+  uploads        UserUploads[]
+  claimFiles     ClaimFile[]
+  notifications  Notification[]
+  beneficiaries  Beneficiary[]
+
+  policies Policy[] 
+}
+
+
+
+//Policyholder Applications table
+model UserUploads {
+  id               Int          @id @default(autoincrement()) // Auto-incrementing ID
+  file_name        String       @db.VarChar(255) // Name of the file
+  file_path        String       @db.VarChar(500) // Path to the file on the server
+  uploaded_at      DateTime     @default(now()) // Timestamp for when the file was uploaded
+  policy_holder_id Int // Foreign key to PolicyHolder
+  policyHolder     PolicyHolder @relation(fields: [policy_holder_id], references: [id]) // Relation to PolicyHolder
+  status           String       @default("Pending") // Status: Pending, Approved, or Rejected
+  policy_number    String?      // Generated policy number (only if approved)
+  ocr_application_id Int?       @unique // Link to OcrApplication table (nullable)
+}
+
+model Query {
+  id         Int      @id @default(autoincrement())  // Auto-incrementing ID
+  message    String   @db.Text                       // The query message
+  senderEmail String   @db.VarChar(255)              // The email of the policyholder sending the query
+  created_at DateTime @default(now())                // Timestamp for when the query was sent
+  resolved    Boolean  @default(false)
+}
+
+//Claims received from Policyholders
+model ClaimFile {
+  id               Int          @id @default(autoincrement())
+  file_name        String       @db.VarChar(255)
+  file_path        String       @db.VarChar(500)
+  uploaded_at      DateTime     @default(now())
+  policy_holder_id Int
+  status           String       @default("Pending")
+  policy_number    String?
+  policyHolder     PolicyHolder @relation(fields: [policy_holder_id], references: [id])
+  ocr_claim_id     Int?         @unique // Stores the ID of the generated OcrClaim
+}
+
+
+model Notification {
+  id             Int      @id @default(autoincrement()) // Notification ID
+  policyHolderId Int      // Foreign key to PolicyHolder
+  message        String   // The message to notify the policyholder
+  email          String   // PolicyHolder email
+  date           DateTime @default(now()) // Timestamp of notification
+  read           Boolean  @default(false) // Whether the notification has been read
+  policyHolder   PolicyHolder @relation(fields: [policyHolderId], references: [id])
+}
+
+//table to capture generated claim data
+model OcrClaim {
+  id                Int          @id @default(autoincrement())  // Auto-incrementing ID
+  claimNo           String       @unique @db.VarChar(50)        // Unique claim number
+  policyNo          String       @db.VarChar(50)                // Policy number extracted from OCR
+  deceasedName      String       @db.VarChar(100)               // First name of the deceased
+  deceasedLastName  String       @db.VarChar(100)               // Last name of the deceased
+  cause            String        @db.VarChar(255)               // Cause of death
+  DOD              DateTime                                       // Date of death
+  created_at       DateTime     @default(now())                 // Timestamp for when the claim was created
+  filePath     String   // Path to the uploaded file
+}
+
+//table to capture OCR application data
+model OcrApplication {
+  id               Int      @id @default(autoincrement())  
+  applicationNo    String   @unique @db.VarChar(50)       
+  fullName         String   @db.VarChar(100)              
+  dateOfBirth      DateTime                               
+  address          String   @db.VarChar(255)              
+  phone            String   @db.VarChar(20)                
+  medicalCondition String   @db.VarChar(255)              
+  preferredPremium String   @db.VarChar(50)               
+  created_at       DateTime @default(now())               
+  filePath         String                                 
+
+  // Link the application to the agent who registered the policyholder
+  agent_id         Int?  
+  agent            User?  @relation("AgentApplications", fields: [agent_id], references: [id], onDelete: SetNull)
+}
+
+model Beneficiary {
+  id             Int      @id @default(autoincrement())
+  policyHolderId Int      // Foreign key to PolicyHolder
+  policy_number   String   @db.VarChar(50) // Policy number tying beneficiaries together
+  fullName       String   @db.VarChar(100)
+  relationship   String   @db.VarChar(50)
+  dateOfBirth    DateTime
+  status         String   @default("Pending") // Status (Pending, Approved, Rejected)
+  createdAt      DateTime @default(now())
+
+  policyHolder PolicyHolder @relation(fields: [policyHolderId], references: [id], onDelete: Cascade)
+}
+
+model Policy {
+  id               Int            @id @default(autoincrement())
+  policy_number    String         @unique
+  policy_holder_id Int
+  policyHolder     PolicyHolder   @relation(fields: [policy_holder_id], references: [id])
+
+  agent_id         Int?
+  agent            User?          @relation(fields: [agent_id], references: [id])
+
+  fullName         String         @db.VarChar(100)   // From OCR
+  email            String         @db.VarChar(255)   // From PolicyHolder
+  dateOfBirth      DateTime
+  phone            String         @db.VarChar(20)
+
+  created_at       DateTime       @default(now())
+}
+
+model Backup {
+  id        Int      @id @default(autoincrement())
+  name      String
+  filePath  String
+  createdAt DateTime @default(now())
+}
+
+

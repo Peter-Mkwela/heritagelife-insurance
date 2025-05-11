@@ -10,12 +10,13 @@ export default function AddUserForm() {
   const [role, setRole] = useState('AGENT');
   const [fullName, setFullName] = useState('');
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const res = await fetch( '/api/user', {
+    const res = await fetch('/api/add_user', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -24,56 +25,79 @@ export default function AddUserForm() {
     });
 
     if (res.ok) {
-      router.push('/it_admin/main'); // Redirect after success
+      setSuccessMessage('Successfully added a new user!');
+      setError('');
+      setUsername('');
+      setEmail('');
+      setPassword('');
+      setRole('AGENT');
+      setFullName('');
+
+      setTimeout(() => setSuccessMessage(''), 2000);
     } else {
       setError('Failed to add user');
     }
   };
 
+  const handleBack = () => {
+    router.push('/it_admin/');
+  };
+
   return (
-    <div className="policy-container">
-      <div className="form-container">
-        <h2 className="policy-heading">Add New User</h2>
-        {error && <p className="text-red-500 text-center">{error}</p>}
-        <form onSubmit={handleSubmit} className="form-content">
-          <div>
-            <label htmlFor="username">Username:</label>
+    <div className="userss-container">
+      {/* Header Strip */}
+      <header className="style-strip">
+        <h1 className="header-title">Add New User</h1>
+        <div className="button-container">
+          <button onClick={handleBack} className="back-button">
+            Back
+          </button>
+        </div>
+      </header>
+
+      {successMessage && <p className="success-message">{successMessage}</p>}
+      {error && <p className="error-message">{error}</p>}
+
+      <div className="add-user-form-wrapper">
+        <form onSubmit={handleSubmit} className="add-user-form">
+          <div className="add-user-form-group">
+            <label htmlFor="username" className="add-user-label">Username:</label>
             <input
               type="text"
               id="username"
-              className="input-field"
+              className="add-user-input"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
             />
           </div>
-          <div>
-            <label htmlFor="email">Email:</label>
+          <div className="add-user-form-group">
+            <label htmlFor="email" className="add-user-label">Email:</label>
             <input
               type="email"
               id="email"
-              className="input-field"
+              className="add-user-input"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
             />
           </div>
-          <div>
-            <label htmlFor="password">Password:</label>
+          <div className="add-user-form-group">
+            <label htmlFor="password" className="add-user-label">Password:</label>
             <input
               type="password"
               id="password"
-              className="input-field"
+              className="add-user-input"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
             />
           </div>
-          <div>
-            <label htmlFor="role">Role:</label>
+          <div className="add-user-form-group">
+            <label htmlFor="role" className="add-user-label">Role:</label>
             <select
               id="role"
-              className="input-field"
+              className="add-user-select"
               value={role}
               onChange={(e) => setRole(e.target.value)}
             >
@@ -81,21 +105,20 @@ export default function AddUserForm() {
               <option value="SYSTEM_ADMIN">System Admin</option>
               <option value="STAKEHOLDER">Stakeholder</option>
               <option value="AGENT">Agent</option>
-              <option value="POLICYHOLDER">Policyholder</option>
             </select>
           </div>
-          <div>
-            <label htmlFor="fullName">Full Name:</label>
+          <div className="add-user-form-group">
+            <label htmlFor="fullName" className="add-user-label">Full Name:</label>
             <input
               type="text"
               id="fullName"
-              className="input-field"
+              className="add-user-input"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
             />
           </div>
-          <div className="button-group">
-            <button type="submit" className="cta-button">
+          <div className="add-user-button-group">
+            <button type="submit" className="add-user-cta-button">
               Add User
             </button>
           </div>

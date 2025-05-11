@@ -1,63 +1,111 @@
-'use client'
-import React from 'react';
+'use client';
+import { useState, useEffect } from 'react';
 
-const ApproveClaimPage = () => {
-  // Dummy claim data
-  const claims = [
-    { id: 1, claimant: 'John Doe', amount: 500, status: 'Pending' },
-    { id: 2, claimant: 'Jane Smith', amount: 1200, status: 'Pending' },
-    { id: 3, claimant: 'Sam Green', amount: 300, status: 'Pending' },
-  ];
-
-  // Function to handle claim approval
-  const handleApprove = (claimId: number) => {
-    console.log(`Claim ${claimId} has been approved.`);
-    // Here you would typically update the claim status and persist it
-  };
-
-  return (
-    <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
-      <h1>Backup</h1>
-      <p>Perform Backup.</p>
-
-      <table style={{ width: '100%', marginTop: '20px', borderCollapse: 'collapse' }}>
-        <thead>
-          <tr>
-            <th style={{ borderBottom: '1px solid #ccc', padding: '10px' }}>Claim ID</th>
-            <th style={{ borderBottom: '1px solid #ccc', padding: '10px' }}>Claimant</th>
-            <th style={{ borderBottom: '1px solid #ccc', padding: '10px' }}>Amount</th>
-            <th style={{ borderBottom: '1px solid #ccc', padding: '10px' }}>Status</th>
-            <th style={{ borderBottom: '1px solid #ccc', padding: '10px' }}>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {claims.map((claim) => (
-            <tr key={claim.id}>
-              <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>{claim.id}</td>
-              <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>{claim.claimant}</td>
-              <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>${claim.amount}</td>
-              <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>{claim.status}</td>
-              <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>
-                <button
-                  onClick={() => handleApprove(claim.id)}
-                  style={{
-                    backgroundColor: '#32CD32',
-                    color: 'white',
-                    border: 'none',
-                    padding: '8px 12px',
-                    cursor: 'pointer',
-                    borderRadius: '4px',
-                  }}
-                >
-                  Approve
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
+type Backup = {
+  id: number;
+  name: string;
+  createdAt: string;
 };
 
-export default ApproveClaimPage;
+export default function BackupPage() {
+  const [backups, setBackups] = useState<Backup[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+
+  const fetchBackups = async () => {
+    try {
+      const res = await fetch('/api/get-backups');
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to fetch backups.');
+      setBackups(data.backups);
+    } catch (err) {
+      setErrorMessage('Failed to load backups.');
+    }
+  };
+
+  const createBackup = async () => {
+    setSuccessMessage('');
+    setErrorMessage('');
+    setLoading(true);
+    try {
+      const res = await fetch('/api/create-backup', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Backup failed.');
+      setSuccessMessage('Backup created successfully.');
+      fetchBackups();
+    } catch (err) {
+      setErrorMessage('Error creating backup.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchBackups();
+  }, []);
+
+  return (
+    <div className="view-application-container">
+      <header className="style-strip">
+        <h1 className="header-title">System Backup</h1>
+        <div className="header-controls-split">
+          <div className="left-controls">
+            <button
+              onClick={createBackup}
+              className="uniform-button"
+              disabled={loading}
+            >
+              {loading ? 'Backing up...' : 'Create Backup'}
+            </button>
+          </div>
+          <div className="right-controls">
+            <button
+              onClick={() => window.history.back()}
+              className="uniform-button"
+            >
+              Back
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {successMessage && <p className="success-message">{successMessage}</p>}
+      {errorMessage && <p className="error-message">{errorMessage}</p>}
+
+      <div className="table-container" style={{ marginTop: '1rem' }}>
+        <table>
+          <thead>
+            <tr>
+              <th>File Name</th>
+              <th>Date</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {backups.map((backup) => (
+              <tr key={backup.id}>
+                <td>{backup.name}</td>
+                <td>{new Date(backup.createdAt).toLocaleString()}</td>
+                <td>
+                  <a
+                    href={`/api/download-backup?file=${backup.name}`}
+                    className="uniform-button"
+                    download
+                  >
+                    Download
+                  </a>
+                </td>
+              </tr>
+            ))}
+            {backups.length === 0 && (
+              <tr>
+                <td colSpan={3}>No backups found.</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}

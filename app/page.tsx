@@ -1,10 +1,8 @@
-// app/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { getSession } from "next-auth/react";
 
 export default function Home() {
   const [isOpen, setIsOpen] = useState(false);
@@ -12,25 +10,22 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    const checkSession = async () => {
-      const session = await getSession();
+    // Assuming you have a way to check authentication manually (via localStorage, cookies, or another method)
+    const userRole = localStorage.getItem("role"); // Example of fetching role from local storage or a cookie.
 
-      if (session?.user.role === "SYSTEM_ADMIN") {
-        router.push("/system_admin/main");
-      } else if (session?.user.role === "AGENT") {
-        router.push("/agent/main");
-      } else if (session?.user.role === "STAKEHOLDER") {
-        router.push("/stakeholder/main");
-      } else if (session?.user.role === "IT_ADMIN") {
-        router.push("/it_admin/main");
-      } else if (session?.user.role === "POLICY_HOLDER") {
-        router.push("/policyholder/main");
-      } else {
-        setLoading(false);
-      }
-    };
-
-    checkSession();
+    if (userRole === "SYSTEM_ADMIN") {
+      router.push("/system_admin/main");
+    } else if (userRole === "AGENT") {
+      router.push("/agent/main");
+    } else if (userRole === "STAKEHOLDER") {
+      router.push("/stakeholder/main");
+    } else if (userRole === "IT_ADMIN") {
+      router.push("/it_admin/main");
+    } else if (userRole === "POLICY_HOLDER") {
+      router.push("/policyholder/main");
+    } else {
+      setLoading(false);
+    }
   }, [router]);
 
   const toggleMenu = () => {
@@ -39,25 +34,31 @@ export default function Home() {
 
   if (loading) {
     return (
-      <div className="h-screen flex justify-center items-center bg-darkBlue text-lightGreen">
+      <div>
         <h2>Loading...</h2>
       </div>
     );
   }
 
   return (
-    <div className="h-screen bg-darkBlue text-white flex flex-col font-sans">
+    <div>
       {/* Navbar */}
-      <header className="w-full flex justify-between items-center px-6 py-4 bg-darkBlue shadow-lg fixed top-0 z-50">
-        <h1 className="text-3xl font-bold text-lightGreen">Heritage Life</h1>
+      <header className="w-full flex justify-between items-center px-4 py-2 bg-white shadow-lg fixed top-0 z-50 h-[80px]">
+        {/* Logo */}
+        <img
+          src="/header/Header.png"
+          alt="Heritage Life Logo"
+          className="h-full object-contain"
+        />
 
         {/* Mobile Menu Icon */}
         <button
           onClick={toggleMenu}
           className="md:hidden text-lightGreen focus:outline-none"
+          aria-label="Toggle Menu"
         >
           <svg
-            className="w-8 h-8"
+            className="w-6 h-6 sm:w-8 sm:h-8" 
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -71,19 +72,17 @@ export default function Home() {
           </svg>
         </button>
 
-        {/* Right-aligned Navbar Links */}
+        {/* Navigation Menu */}
         <nav
-          className={`fixed top-0 right-0 h-full bg-darkBlue shadow-lg transform ${
-            isOpen ? "translate-x-0" : "translate-x-full"
-          } transition-transform duration-300 w-auto md:w-auto md:static md:translate-x-0 flex flex-col md:flex-row items-center md:space-x-6 md:space-y-0 space-y-4 md:space-y-0 p-6`}
+          className={`fixed top-0 right-0 h-full bg-white ${isOpen ? "translate-x-0" : "translate-x-full"} transition-transform duration-300 w-auto md:w-auto md:static md:translate-x-0 flex flex-col md:flex-row items-center md:space-x-6 p-6`}
         >
+          {/* Close Menu Button */}
           <button
             onClick={toggleMenu}
-            className="self-end text-lightGreen md:hidden"
+            className="self-end text-darkBlue md:hidden"
           >
-            {/* Close Icon */}
             <svg
-              className="w-6 h-6"
+              className="w-6 h-6 sm:w-8 sm:h-8 text-lightGreen"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -112,28 +111,36 @@ export default function Home() {
             <Link href="./it_admin" className="nav-link">
               IT Admin
             </Link>
-            <Link href="./claim" className="nav-link">
-              Tesseract
-            </Link>
           </div>
         </nav>
       </header>
 
       {/* Main Content */}
-      <main className="flex-grow mt-20 md:mt-0 text-center flex flex-col items-center justify-center px-6">
-        <h2 className="animated-text text-5xl md:text-6xl font-extrabold leading-tight text-lightGreen mb-6">
-          Welcome to Heritage Life
-        </h2>
-        <p className="text-lg md:text-xl max-w-2xl mx-auto">
-          Streamline your insurance experience with advanced AI-powered
-          solutions designed for efficiency and ease.
-        </p>
-        <div className="mt-8">
-          <Link href="#" className="cta-button">
-            Get Started
-          </Link>
+      <main
+        className="flex-grow mt-[80px] flex items-center justify-center px-6 bg-cover bg-center bg-no-repeat"
+        style={{
+          backgroundImage: `url('/header/back.jpeg')`,
+          minHeight: "calc(100vh)", // Ensures it covers the full viewport minus the header height
+        }}
+      >
+        <div className="text-center">
+          <h2 className="animated-text">
+            Welcome to Heritage Life
+          </h2>
+          <p className="paragraph-text">
+          Streamline your insurance journey with our easy-to-use platform, designed for your convenience
+          </p>
+          <div className="cta-container">
+            <Link href="https://dev-heritagelife.pantheonsite.io" className="cta-button">
+              Get Started
+            </Link>
+          </div>
         </div>
       </main>
+      {/* Footer Strip */}
+      <footer className="footer-strip">
+        <p>&copy; {new Date().getFullYear()} Heritagelife. All rights reserved.</p>
+      </footer>
     </div>
   );
 }

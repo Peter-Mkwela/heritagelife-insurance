@@ -130,35 +130,35 @@ const SystemAdminLanding: React.FC = () => {
   const operations = [
     { id: 1, name: "Add New User", route: "/it_admin/add_user" },
     { id: 2, name: "Delete User", route: "/it_admin/delete_user" },
-    { id: 3, name: "Approve Claim", route: "/it_admin/approve_claim" },
-    { id: 4, name: "Create Charts", route: "/it_admin/charts" },
-    { id: 5, name: "System Backup", route: "/it_backup" },
-    { id: 6, name: 'Logout', route: '/', action: handleLogout },
+    { id: 3, name: "System Backup", route: "/it_admin/it_backup" },
+    { id: 4, name: 'Exit', route: '/', action: handleLogout },
   ];
 
   return (
     <div className="system-admin-landing">
-      <header className="landing-header">
-        <h1 className='header-title'>IT Administrator Portal</h1>
+      {/* Header Strip */}
+      <header className="header-strip">
+        <h1 className="header-title">IT Administrator Portal</h1>
       </header>
 
       <main className="operations-section">
-        <h2 className='operations-title'>Choose an Operation</h2>
-        <div className="operations-grid">
-          {operations.map((operation) => (
-            <button
-              key={operation.id}
-              onClick={operation.action || (() => router.push(operation.route))}
-              className="operation-item"
-            >
-              <h3 className='operation-name'>{operation.name}</h3>
-            </button>
-          ))}
-        </div>
-      </main>
+  <h2 className="operations-title">Choose an Operation</h2>
+  <div className="operations-row">
+    {operations.map((operation) => (
+      <button
+        key={operation.id}
+        onClick={operation.action || (() => router.push(operation.route))}
+        className="operation-item"
+      >
+        <h3 className="operation-name">{operation.name}</h3>
+      </button>
+    ))}
+  </div>
+</main>
 
-      <footer className="footer">
-        &copy; {new Date().getFullYear()} Insurance Portal. All rights reserved.
+      {/* Footer Strip */}
+      <footer className="footer-strip">
+        <p>&copy; {new Date().getFullYear()} Insurance Portal. All rights reserved.</p>
       </footer>
     </div>
   );

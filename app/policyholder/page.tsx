@@ -1,4 +1,4 @@
-// app/policy-holder/login.tsx
+// app/Policyholder/page.tsx
 
 "use client";
 
@@ -8,23 +8,21 @@ import LoginForm from "../components/LoginForm";
 const LoginPage = () => {
   return (
     <div className="policy-container">
-      <div className="form-container">
-        <h1 className="policy-heading">Login to Your Account</h1>
+      <div className="login-form-container">
+        <h1 className="policy-heading">Login</h1>
         <p className="description">Please enter your credentials to log in.</p>
 
-        <div className="form-content">
-          {/* LoginForm Component */}
-          <LoginForm />
+        {/* Render the streamlined LoginForm */}
+        <LoginForm />
 
-          <div className="button-group">
-            <Link href="/policyholder/signup">
-              <button className="cta-button signup small-button">Sign Up</button>
-            </Link>
+        <div className="button-group">
+          <Link href="/policyholder/signup">
+            <button className="cta-button cta-button-login">Sign Up</button>
+          </Link>
 
-            <Link href="/">
-              <button className="cta-button back-home small-button">Back Home</button>
-            </Link>
-          </div>
+          <Link href="/">
+            <button className="cta-button cta-button-back-home">Back Home</button>
+          </Link>
         </div>
 
         <p className="login-bottom-text">
