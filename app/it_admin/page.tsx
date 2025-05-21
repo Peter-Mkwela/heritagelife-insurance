@@ -105,7 +105,7 @@ const SystemAdminLanding: React.FC = () => {
             </div>
 
             <ReCAPTCHA
-              sitekey="your_recaptcha_site_key"
+              sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!}
               onChange={(token) => setCaptchaToken(token || '')}
               ref={recaptchaRef}
             />

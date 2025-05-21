@@ -1,16 +1,19 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import ReCAPTCHA from 'react-google-recaptcha';
 
 const SystemAdminLanding: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [captchaToken, setCaptchaToken] = useState('');
   const [error, setError] = useState('');
   const router = useRouter();
   const pathname = usePathname(); // This will capture the /system_admin path
+  const recaptchaRef = useRef<ReCAPTCHA>(null);
 
   // Capture the intended route directly as /system_admin (no need to go to /login anymore)
   const intendedRoute = '/stakeholder';
@@ -18,6 +21,11 @@ const SystemAdminLanding: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(''); // Clear any previous errors
+
+    if (!captchaToken) {
+      setError('Please complete the CAPTCHA.');
+      return;
+    }
 
     const res = await fetch('/api/login', {
       method: 'POST',
@@ -34,6 +42,8 @@ const SystemAdminLanding: React.FC = () => {
       setIsAuthenticated(true); // Set the user as authenticated
     } else {
       setError(data.error || 'Login failed');
+      recaptchaRef.current?.reset();
+      setCaptchaToken('');
     }
   };
 
@@ -106,6 +116,12 @@ const SystemAdminLanding: React.FC = () => {
                 onChange={(e) => setPassword(e.target.value)}
               />
             </div>
+            <ReCAPTCHA
+              sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!}
+              onChange={(token) => setCaptchaToken(token || '')}
+              ref={recaptchaRef}
+            />
+
             {error && <p className="error-message">{error}</p>}
             <div className="button-group">
               <button type="submit" className="cta-button cta-button-login">

@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import ReCAPTCHA from 'react-google-recaptcha';
 
 const SystemAdminLanding: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -9,8 +10,10 @@ const SystemAdminLanding: React.FC = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [captchaToken, setCaptchaToken] = useState('');
   const router = useRouter();
   const pathname = usePathname();
+  const recaptchaRef = useRef<ReCAPTCHA>(null);
 
   const intendedRoute = '/system_admin';
 
@@ -32,6 +35,11 @@ const SystemAdminLanding: React.FC = () => {
     e.preventDefault();
     setError('');
 
+    if (!captchaToken) {
+      setError('Please complete the CAPTCHA.');
+      return;
+    }
+
     const res = await fetch('/api/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -47,6 +55,8 @@ const SystemAdminLanding: React.FC = () => {
       setIsAuthenticated(true);
     } else {
       setError(data.error || 'Login failed');
+      recaptchaRef.current?.reset();
+      setCaptchaToken('');
     }
   };
 
@@ -98,6 +108,12 @@ const SystemAdminLanding: React.FC = () => {
                 onChange={(e) => setPassword(e.target.value)}
               />
             </div>
+            <ReCAPTCHA
+              sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!}
+              onChange={(token) => setCaptchaToken(token || '')}
+              ref={recaptchaRef}
+            />
+
             {error && <p className="error-message">{error}</p>}
             <div className="button-group">
               <button type="submit" className="cta-button cta-button-login">
