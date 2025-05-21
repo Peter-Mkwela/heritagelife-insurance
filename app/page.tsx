@@ -131,7 +131,7 @@ export default function Home() {
           Streamline your insurance journey with our easy-to-use platform, designed for your convenience
           </p>
           <div className="cta-container">
-            <Link href="https://dev-heritagelife.pantheonsite.io" className="cta-button">
+            <Link href="./get-started" className="cta-button">
               Get Started
             </Link>
           </div>

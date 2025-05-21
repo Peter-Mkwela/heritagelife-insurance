@@ -1,13 +1,15 @@
-// components/LoginForm.tsx
+'use client';
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import ReCAPTCHA from "react-google-recaptcha";
 
 const LoginForm = () => {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
+  const [captchaToken, setCaptchaToken] = useState("");
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
@@ -19,8 +21,17 @@ const LoginForm = () => {
     }));
   };
 
+  const handleCaptchaChange = (token: string | null) => {
+    setCaptchaToken(token || "");
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!captchaToken) {
+      setError("Please complete the CAPTCHA.");
+      return;
+    }
 
     try {
       const response = await fetch("/api/auth/login", {
@@ -28,16 +39,15 @@ const LoginForm = () => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ ...formData, captchaToken }),
       });
 
       const result = await response.json();
 
       if (response.ok) {
-        // Store the email in localStorage
         localStorage.setItem("policyholderEmail", result.email);
         console.log("Stored Email:", result.email);
-        router.push("/policyholder/main"); // Navigate to the main page
+        router.push("/policyholder/main");
       } else {
         setError(result.message || "Invalid email or password.");
       }
@@ -70,7 +80,17 @@ const LoginForm = () => {
           required
         />
       </div>
+
+      {/* ✅ reCAPTCHA component */}
+      <div style={{ marginTop: "1rem", marginBottom: "1rem" }}>
+        <ReCAPTCHA
+          sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!}
+          onChange={handleCaptchaChange}
+        />
+      </div>
+
       {error && <p className="error-message">{error}</p>}
+
       <button type="submit" className="cta-button cta-button-login">
         Login
       </button>
