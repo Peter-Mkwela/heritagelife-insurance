@@ -9,12 +9,9 @@ const SystemAdminLanding: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [captchaToken, setCaptchaToken] = useState('');
   const [error, setError] = useState('');
-  const recaptchaRef = useRef<ReCAPTCHA>(null);
-
   const router = useRouter();
-  const pathname = usePathname();
+  const captchaRef = useRef<ReCAPTCHA>(null);
 
   const intendedRoute = '/it_admin';
 
@@ -22,15 +19,18 @@ const SystemAdminLanding: React.FC = () => {
     e.preventDefault();
     setError('');
 
-    if (!captchaToken) {
-      setError('Please complete the CAPTCHA.');
-      return;
-    }
+    const captchaToken = await captchaRef.current?.executeAsync();
+    captchaRef.current?.reset();
 
     const res = await fetch('/api/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password, intendedRoute, captchaToken }),
+      body: JSON.stringify({
+        username,
+        password,
+        intendedRoute,
+        captchaToken,
+      }),
     });
 
     const data = await res.json();
@@ -42,8 +42,6 @@ const SystemAdminLanding: React.FC = () => {
       setIsAuthenticated(true);
     } else {
       setError(data.error || 'Login failed');
-      recaptchaRef.current?.reset();
-      setCaptchaToken('');
     }
   };
 
@@ -61,17 +59,21 @@ const SystemAdminLanding: React.FC = () => {
   };
 
   useEffect(() => {
-    const token = localStorage.getItem('auth_token');
-    const role = localStorage.getItem('role')?.toLowerCase();
+    const checkAuth = () => {
+      const token = localStorage.getItem('auth_token');
+      const role = localStorage.getItem('role')?.toLowerCase();
 
-    if (token && role === 'it_admin') {
-      setIsAuthenticated(true);
-    } else {
-      setIsAuthenticated(false);
-      router.push('/it_admin');
-    }
+      if (token && role === 'it_admin') {
+        setIsAuthenticated(true);
+      } else {
+        setIsAuthenticated(false);
+        router.push('/it_admin');
+      }
 
-    setLoading(false);
+      setLoading(false);
+    };
+
+    checkAuth();
   }, [router]);
 
   if (loading) {
@@ -103,18 +105,26 @@ const SystemAdminLanding: React.FC = () => {
                 onChange={(e) => setPassword(e.target.value)}
               />
             </div>
-
-            <ReCAPTCHA
-              sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!}
-              onChange={(token) => setCaptchaToken(token || '')}
-              ref={recaptchaRef}
-            />
-
             {error && <p className="error-message">{error}</p>}
 
+            {/* Invisible reCAPTCHA */}
+            <ReCAPTCHA
+              sitekey="YOUR_SITE_KEY" // Replace with your actual site key
+              size="invisible"
+              ref={captchaRef}
+            />
+
             <div className="button-group">
-              <button type="submit" className="cta-button cta-button-login">Login</button>
-              <button type="button" onClick={handleHomeRedirect} className="cta-button cta-button-back-home">Home</button>
+              <button type="submit" className="cta-button cta-button-login">
+                Login
+              </button>
+              <button
+                type="button"
+                onClick={handleHomeRedirect}
+                className="cta-button cta-button-back-home"
+              >
+                Home
+              </button>
             </div>
           </form>
         </div>
@@ -126,7 +136,7 @@ const SystemAdminLanding: React.FC = () => {
     { id: 1, name: "Add New User", route: "/it_admin/add_user" },
     { id: 2, name: "Delete User", route: "/it_admin/delete_user" },
     { id: 3, name: "System Backup", route: "/it_admin/it_backup" },
-    { id: 4, name: "Exit", route: "/", action: handleLogout },
+    { id: 4, name: 'Exit', route: '/', action: handleLogout },
   ];
 
   return (
@@ -134,7 +144,6 @@ const SystemAdminLanding: React.FC = () => {
       <header className="header-strip">
         <h1 className="header-title">IT Administrator Portal</h1>
       </header>
-
       <main className="operations-section">
         <h2 className="operations-title">Choose an Operation</h2>
         <div className="operations-row">
@@ -149,7 +158,6 @@ const SystemAdminLanding: React.FC = () => {
           ))}
         </div>
       </main>
-
       <footer className="footer-strip">
         <p>&copy; {new Date().getFullYear()} Insurance Portal. All rights reserved.</p>
       </footer>

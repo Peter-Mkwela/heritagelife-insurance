@@ -43,7 +43,7 @@ const SystemAdminLanding: React.FC = () => {
     const res = await fetch('/api/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password, intendedRoute }),
+      body: JSON.stringify({ username, password, intendedRoute, captchaToken }),
     });
 
     const data = await res.json();
