@@ -18,7 +18,7 @@ const ResetPassword = () => {
 
     // Simulate API call for password reset (replace with your backend logic)
     setTimeout(() => {
-      setMessage("Password reset link sent to your email address.");
+      setMessage("Reset link sent to your email address, check in a few minutes");
       setLoading(false);
     }, 1500);
   };
@@ -60,7 +60,7 @@ const ResetPassword = () => {
           </div>
         </form>
 
-        {message && <p className="login-signup-message">{message}</p>}
+        {message && <p className="login-signup-message" style={{ color: 'red' }}>{message}</p>}
       </div>
     </div>
   );

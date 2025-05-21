@@ -19,9 +19,12 @@ const verifyCaptcha = async (token: string) => {
 export async function POST(req: Request) {
   const { username, password, intendedRoute, captchaToken } = await req.json();
 
-  if (!username || !password || !captchaToken) {
-    return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
+  if (!username || !password || !captchaToken || !intendedRoute) {
+    return NextResponse.json({
+      error: 'Missing required fields: username, password, captchaToken, or intendedRoute',
+    }, { status: 400 });
   }
+  
 
   const isHuman = await verifyCaptcha(captchaToken);
   if (!isHuman) {
