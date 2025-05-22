@@ -131,7 +131,8 @@ const handleGenerate = async (id: number, filePath: string) => {
       return;
     }
 
-    const fileUrl = `http://localhost:3000/uploads/${fileName}`;
+    const fileUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/uploads/${fileName}`;
+
 
     // Step 1: Send file to OCR API
     const ocrRes = await fetch('/api/application-ocr', {
