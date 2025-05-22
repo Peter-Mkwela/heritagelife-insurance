@@ -139,7 +139,7 @@ export default function Home() {
       </main>
       {/* Footer Strip */}
       <footer className="footer-strip">
-        <p>&copy; {new Date().getFullYear()} Heritagelife. All rights reserved.</p>
+        <p>&copy; {new Date().getFullYear()} Simplified.IT All rights reserved.</p>
       </footer>
     </div>
   );

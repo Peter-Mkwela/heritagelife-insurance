@@ -174,7 +174,7 @@ const SystemAdminLanding: React.FC = () => {
 
       {/* Footer Strip */}
       <footer className="footer-strip">
-        <p>&copy; {new Date().getFullYear()} Insurance Portal. All rights reserved.</p>
+        <p>&copy; {new Date().getFullYear()} Simplified.IT All rights reserved.</p>
       </footer>
     </div>
   );

@@ -10,8 +10,9 @@ const SystemAdminLanding: React.FC = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [captchaToken, setCaptchaToken] = useState('');
   const router = useRouter();
-  const captchaRef = useRef<ReCAPTCHA>(null);
+  const recaptchaRef = useRef<ReCAPTCHA>(null);
 
   const intendedRoute = '/it_admin';
 
@@ -19,8 +20,10 @@ const SystemAdminLanding: React.FC = () => {
     e.preventDefault();
     setError('');
 
-    const captchaToken = await captchaRef.current?.executeAsync();
-    captchaRef.current?.reset();
+    if (!captchaToken) {
+      setError('Please complete the CAPTCHA.');
+      return;
+    }
 
     const res = await fetch('/api/login', {
       method: 'POST',
@@ -40,8 +43,10 @@ const SystemAdminLanding: React.FC = () => {
       localStorage.setItem('auth_token', data.token);
       localStorage.setItem('role', role);
       setIsAuthenticated(true);
-    } else {
+    } else  {
       setError(data.error || 'Login failed');
+      recaptchaRef.current?.reset();
+      setCaptchaToken('');
     }
   };
 
@@ -105,14 +110,15 @@ const SystemAdminLanding: React.FC = () => {
                 onChange={(e) => setPassword(e.target.value)}
               />
             </div>
+
+            <ReCAPTCHA
+              sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!}
+              onChange={(token) => setCaptchaToken(token || '')}
+              ref={recaptchaRef}
+            />
+
             {error && <p className="error-message">{error}</p>}
 
-            {/* Invisible reCAPTCHA */}
-            <ReCAPTCHA
-              sitekey="YOUR_SITE_KEY" // Replace with your actual site key
-              size="invisible"
-              ref={captchaRef}
-            />
 
             <div className="button-group">
               <button type="submit" className="cta-button cta-button-login">
@@ -159,7 +165,7 @@ const SystemAdminLanding: React.FC = () => {
         </div>
       </main>
       <footer className="footer-strip">
-        <p>&copy; {new Date().getFullYear()} Insurance Portal. All rights reserved.</p>
+        <p>&copy; {new Date().getFullYear()} Simplified.IT All rights reserved.</p>
       </footer>
     </div>
   );
