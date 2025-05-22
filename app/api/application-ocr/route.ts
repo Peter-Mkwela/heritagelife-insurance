@@ -12,11 +12,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "File URL is required." }, { status: 400 });
     }
 
-    // Step 1: Download the image from the URL
-    const imageResponse = await axios.get(fileUrl, { responseType: "stream" });
+    // ✅ Step 1: Download the file as a Buffer instead of stream
+    const imageResponse = await axios.get(fileUrl, { responseType: "arraybuffer" });
+    const fileBuffer = Buffer.from(imageResponse.data);
 
+    // ✅ Step 2: Upload to OCR.space with Buffer
     const formData = new FormData();
-    formData.append("file", imageResponse.data, "upload.jpg");
+    formData.append("file", fileBuffer, {
+      filename: "upload.jpg", // or .png/.pdf depending on the upload
+      contentType: "application/octet-stream",
+    });
     formData.append("apikey", "K89337592188957");
     formData.append("language", "eng");
     formData.append("OCREngine", "2");
@@ -35,7 +40,7 @@ export async function POST(req: Request) {
 
     const extractedText = ocrResponse.data.ParsedResults[0].ParsedText;
 
-    // ✅ Extract fields from OCR text (same logic as before)
+    // ✅ Extract fields from OCR text
     const fields = {
       fullName: extractedText.match(/FullName:\s*([^\n]+)/i)?.[1]?.trim().replace(/[`_]/g, "'"),
       dob: extractedText.match(/Date of Birth:\s*([^\n(]+)/i)?.[1]?.trim(),
@@ -45,7 +50,6 @@ export async function POST(req: Request) {
       preferredPremium: extractedText.match(/Preferred Premium:\s*([^\n]+)/i)?.[1]?.trim()
     };
 
-    // ✅ Parse date and prepare final object (same logic as before)
     let dateOfBirth = null;
     if (fields.dob) {
       const cleanDOB = fields.dob.replace(/[^\d-]/g, '');
@@ -78,7 +82,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // Extract relative path for DB lookup
+    // ✅ Use relative path for DB query
     const relativePath = new URL(fileUrl).pathname;
 
     const userUpload = await prisma.userUploads.findFirst({
@@ -99,7 +103,6 @@ export async function POST(req: Request) {
     });
 
     const agentId = policyHolder?.agent_id || null;
-
     const applicationNo = `APP-${Math.floor(100000 + Math.random() * 900000)}`;
 
     const newApplication = await prisma.ocrApplication.create({
@@ -122,6 +125,7 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json(newApplication, { status: 201 });
+
   } catch (error) {
     console.error("API Error:", error);
     return NextResponse.json(
