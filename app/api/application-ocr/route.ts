@@ -40,27 +40,34 @@ export async function POST(req: Request) {
 
     const extractedText = ocrResponse.data.ParsedResults[0].ParsedText;
 
-    // Helper to extract specific fields
-    const extractField = (label: string) => {
-      const regex = new RegExp(`${label}:\\s*(.*)`, "i");
-      const match = extractedText.match(regex);
-      return match?.[1]?.trim() || null;
+    // Flexible label extractor
+    const extractField = (labels: string[]) => {
+      for (const label of labels) {
+        const regex = new RegExp(`${label}\\s*:\\s*(.*)`, "i");
+        const match = extractedText.match(regex);
+        if (match) return match[1].trim();
+      }
+      return null;
     };
 
-    const fullName = extractField("FullName");
-    const phone = extractField("Phone");
-    const address = extractField("Adress|Address"); // to handle both spellings
-    const medicalCondition = extractField("Medical Condition");
-    const preferredPremium = extractField("Preferred Premium");
-    const rawDOB = extractField("Date of Birth");
+    const fullName = extractField(["FullName"]);
+    const phone = extractField(["Phone"]);
+    const address = extractField(["Adress", "Address"]); // fixed
+    const medicalCondition = extractField(["Medical Condition"]);
+    const preferredPremium = extractField(["Preferred Premium"]);
+    const rawDOB = extractField(["Date of Birth"]);
 
     let dateOfBirth: string | null = null;
     if (rawDOB) {
-      const cleaned = rawDOB.replace(/[^\d-]/g, ""); // remove any text
+      const cleaned = rawDOB.replace(/[^\d-]/g, "");
       const [day, month, year] = cleaned.split("-");
       if (day && month && year) {
         const isoDate = new Date(`${year}-${month}-${day}`);
-        if (!isNaN(isoDate.getTime())) {
+        if (
+          !isNaN(isoDate.getTime()) &&
+          isoDate.getFullYear() > 1900 &&
+          isoDate.getFullYear() <= new Date().getFullYear()
+        ) {
           dateOfBirth = isoDate.toISOString();
         }
       }
@@ -72,7 +79,7 @@ export async function POST(req: Request) {
       address,
       phone,
       medicalCondition,
-      preferredPremium
+      preferredPremium,
     };
 
     const missingFields = Object.entries(extractedFields)
