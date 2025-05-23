@@ -40,25 +40,32 @@ export async function POST(req: Request) {
 
     const extractedText = ocrResponse.data.ParsedResults[0].ParsedText;
 
-    // Flexible label extractor
-    const extractField = (labels: string[]) => {
-      for (const label of labels) {
-        const regex = new RegExp(`${label}\\s*:\\s*(.*)`, "i");
-        const match = extractedText.match(regex);
-        if (match) return match[1].trim();
+    // Multiline-safe extractor function: grabs text between this label and next label(s)
+    const extractFieldMultiline = (label: string, nextLabels: string[]) => {
+      const nextLabelPattern = nextLabels.length > 0 ? nextLabels.join("|") : "$";
+      const regex = new RegExp(
+        `${label}\\s*:\\s*([\\s\\S]*?)(?=\\b(${nextLabelPattern})\\b|$)`,
+        "i"
+      );
+      const match = extractedText.match(regex);
+      if (match) {
+        return match[1].trim().replace(/\n/g, " ").replace(/\s+/g, " ");
       }
       return null;
     };
 
-    const fullName = extractField(["FullName"]);
-    const phone = extractField(["Phone"]);
-    const address = extractField(["Adress", "Address"]); // fixed
-    const medicalCondition = extractField(["Medical Condition"]);
-    const preferredPremium = extractField(["Preferred Premium"]);
-    const rawDOB = extractField(["Date of Birth"]);
+    // Extract fields, passing in the labels that follow each field in your form
+    const fullName = extractFieldMultiline("FullName", ["Date of Birth", "Adress", "Phone"]);
+    const rawDOB = extractFieldMultiline("Date of Birth", ["Adress", "Phone"]);
+    const address = extractFieldMultiline("Adress", ["Phone", "Medical Condition"]);
+    const phone = extractFieldMultiline("Phone", ["Medical Condition", "Preferred Premium"]);
+    const medicalCondition = extractFieldMultiline("Medical Condition", ["Preferred Premium"]);
+    const preferredPremium = extractFieldMultiline("Preferred Premium", []);
 
+    // Parse and format dateOfBirth (expecting DD-MM-YYYY)
     let dateOfBirth: string | null = null;
     if (rawDOB) {
+      // Clean raw date to keep digits and dash only
       const cleaned = rawDOB.replace(/[^\d-]/g, "");
       const [day, month, year] = cleaned.split("-");
       if (day && month && year) {
