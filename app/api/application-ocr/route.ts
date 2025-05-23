@@ -44,7 +44,7 @@ export async function POST(req: Request) {
     const fields = {
       fullName: extractedText.match(/FullName:\s*([^\n]+)/i)?.[1]?.trim().replace(/[`_]/g, "'"),
       dob: extractedText.match(/Date of Birth:\s*([^\n(]+)/i)?.[1]?.trim(),
-      address: extractedText.match(/Adress:\s*([^\n]+)/i)?.[1]?.trim(),
+      address: extractedText.match(/Address:\s*([^\n]+)/i)?.[1]?.trim(),
       phone: extractedText.match(/Phone:\s*([^\n]+)/i)?.[1]?.trim(),
       medicalCondition: extractedText.match(/Medical Condition:\s*([^\n]+)/i)?.[1]?.trim(),
       preferredPremium: extractedText.match(/Preferred Premium:\s*([^\n]+)/i)?.[1]?.trim()

@@ -18,18 +18,21 @@ const SystemAdminLanding: React.FC = () => {
   const intendedRoute = '/system_admin';
 
   useEffect(() => {
-    // ⛔ Ensure nothing is rendered until this runs
-    const token = localStorage.getItem('auth_token');
-    const role = localStorage.getItem('role')?.toLowerCase();
-
-    if (token && role === 'system_admin') {
-      setIsAuthenticated(true);
-    } else {
-      setIsAuthenticated(false);
-    }
-
-    setLoading(false); // ✅ Unlock the page only after checking
-  }, []);
+    const checkAuth = () => {
+      const token = localStorage.getItem('auth_token');
+      const role = localStorage.getItem('role')?.toLowerCase();
+  
+      if (token && role === 'system_admin') {
+        setIsAuthenticated(true);
+      } else {
+        setIsAuthenticated(false);
+        router.push('/system_admin'); 
+      }
+      setLoading(false);
+    };
+  
+    checkAuth();
+  }, [router]); 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
