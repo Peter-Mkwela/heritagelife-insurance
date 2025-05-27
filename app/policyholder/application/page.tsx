@@ -23,11 +23,19 @@ const ApplyPage = () => {
           console.error('Failed to fetch agents:', data.message);
         }
       } catch (error) {
-        console.error('Error fetching agents:', error);
+    
       }
     };
 
     fetchAgents();
+  }, []);
+
+  // Autofill email from localStorage
+  useEffect(() => {
+    const storedEmail = localStorage.getItem('policyholderEmail');
+    if (storedEmail) {
+      setEmail(storedEmail);
+    }
   }, []);
 
   // Handle File Upload
@@ -133,7 +141,11 @@ const ApplyPage = () => {
 
           <div className="add-user-button-group">
             <button type="submit" className="add-user-cta-button">Submit Application</button>
-            <button type="button" onClick={() => router.push('/policyholder/main/')} className="add-user-back-button">
+            <button
+              type="button"
+              onClick={() => router.push('/policyholder/main/')}
+              className="add-user-back-button"
+            >
               Back
             </button>
           </div>

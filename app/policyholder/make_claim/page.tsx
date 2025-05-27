@@ -1,6 +1,5 @@
-//apply claim policyholder frontend
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 const ApplyPage = () => {
@@ -9,6 +8,14 @@ const ApplyPage = () => {
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const router = useRouter();
+
+  // Autofill email from localStorage
+  useEffect(() => {
+    const storedEmail = localStorage.getItem('policyholderEmail');
+    if (storedEmail) {
+      setEmail(storedEmail);
+    }
+  }, []);
 
   // Function to handle navigation back
   const handleBack = () => {
@@ -48,18 +55,17 @@ const ApplyPage = () => {
         setError(data.message);
       }
     } catch (error) {
-      setError('Error submitting the claim.');
+     
     }
   };
 
   return (
     <div className="users-container">
-            {/* Header Strip */}
-            <header className="style-strip">
+      {/* Header Strip */}
+      <header className="style-strip">
         <h1 className="header-title">Make a Claim</h1>
       </header>
       <div className="form container">
-
 
         {error && <p className="add-user-error">{error}</p>}
         {successMessage && <p className="add-user-success">{successMessage}</p>}

@@ -42,20 +42,20 @@ const ViewClaimPage = () => {
   };
 
   return (
-    <div className="view-claim-container">
+    <div className="view-claim-page">
       <header className="style-strip">
-        <h1 className="header-title">View Claim Details</h1>
-        <div className="button-container">
-          <button onClick={handleBack} className="back-button">
-            Back
-          </button>
+        <div className="strip-inner">
+          <h1 className="header-title">View Claim Details</h1>
+          <div className="button-container">
+            <button onClick={handleBack} className="back-button">Back</button>
+          </div>
         </div>
       </header>
-
+  
       {error && <p className="error-message">{error}</p>}
-
+  
       {claims.length > 0 ? (
-        <div className="claim-details-container">
+        <div className="table-container">
           <table>
             <thead>
               <tr>
@@ -77,7 +77,7 @@ const ViewClaimPage = () => {
                   <td>{claim.deceasedName} {claim.deceasedLastName}</td>
                   <td>{claim.cause}</td>
                   <td>{new Date(claim.DOD).toLocaleDateString()}</td>
-                  <td>{new Date(claim.created_at).toLocaleString()}</td> 
+                  <td>{new Date(claim.created_at).toLocaleString()}</td>
                 </tr>
               ))}
             </tbody>
@@ -88,6 +88,7 @@ const ViewClaimPage = () => {
       )}
     </div>
   );
+  
 };
 
 export default ViewClaimPage;

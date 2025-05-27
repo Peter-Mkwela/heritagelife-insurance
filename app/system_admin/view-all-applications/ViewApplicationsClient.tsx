@@ -52,7 +52,7 @@ const ViewApplicationPage = () => {
   if (error) return <p className="error-message">{error}</p>;
 
   return (
-    <div className="view-application-container">
+    <div className="track-business-container">
       <header className="style-strip">
         <h1 className="header-title">
           {id ? "View Generated Application" : "All Generated Applications"}
@@ -63,9 +63,9 @@ const ViewApplicationPage = () => {
           </button>
         </div>
       </header>
-
+  
       {applications.length > 0 ? (
-        <div className="application-details">
+        <div className="table-container">
           <table>
             <thead>
               <tr>
@@ -102,6 +102,7 @@ const ViewApplicationPage = () => {
       )}
     </div>
   );
+  
 };
 
 export default ViewApplicationPage;

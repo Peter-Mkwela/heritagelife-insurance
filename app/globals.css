@@ -1751,31 +1751,59 @@ p.success-message {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  flex-wrap: nowrap; /* Keep inline */
+  overflow-x: auto;  /* Allow scrolling if too many buttons */
 }
 
+/* Input Styling */
 .uniform-input {
   padding: 0.5rem;
   font-size: 1rem;
-  width: 200px;
-  border-radius: 4px;
+  width: 100%;
+  max-width: 200px;
+  border-radius: 6px;
   border: 1px solid #ccc;
   color: black;
+  box-sizing: border-box;
+  transition: all 0.3s ease;
 }
 
+.uniform-input:focus {
+  outline: none;
+  border-color: #32CD32;
+  box-shadow: 0 0 0 3px rgba(50, 205, 50, 0.2);
+}
+
+/* Modern Button Styling */
 .uniform-button {
   padding: 0.5rem 1rem;
   font-size: 1rem;
-  background-color: #32CD32;
+  background: linear-gradient(to right, #32CD32, #28a428);
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  white-space: nowrap;
+  transition: transform 0.2s ease, background-color 0.3s ease;
 }
 
 .uniform-button:hover {
-  background-color: #28a428;
+  background: linear-gradient(to right, #28a428, #1f7f1f);
+  transform: translateY(-1px);
 }
+
+/* === Optional Media Query for Slight Tweaks === */
+@media (max-width: 480px) {
+  .uniform-input {
+    max-width: 150px;
+  }
+
+  .uniform-button {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.95rem;
+  }
+}
+
 
 /* global.css */
 
