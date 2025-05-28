@@ -1,3 +1,4 @@
+// app/api/application-ocr/route.ts
 import { NextResponse } from "next/server";
 import axios from "axios";
 import prisma from "../../../lib/prisma";
@@ -14,13 +15,17 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "File path is required." }, { status: 400 });
     }
 
-    const relativePath = fileUrl.replace(/^https?:\/\/localhost:3000/, "");
+    // Strip domain to get relative path like '/uploads/filename.pdf'
+    const relativePath = fileUrl.replace(/^https?:\/\/[^\/]+/, "");
+
+    // Full local file path on server
     const filePath = path.join(process.cwd(), "public", relativePath);
 
     if (!fs.existsSync(filePath)) {
       return NextResponse.json({ error: `File not found at ${filePath}` }, { status: 404 });
     }
 
+    // Prepare form data for OCR API
     const formData = new FormData();
     formData.append("file", fs.createReadStream(filePath));
     formData.append("apikey", "K89337592188957");
@@ -41,19 +46,21 @@ export async function POST(req: Request) {
 
     const extractedText = ocrResponse.data.ParsedResults[0].ParsedText;
 
+    // Extract required fields via regex
     const fields = {
       fullName: extractedText.match(/FullName:\s*([^\n]+)/i)?.[1]?.trim().replace(/[`_]/g, "'"),
       dob: extractedText.match(/Date of Birth:\s*([^\n(]+)/i)?.[1]?.trim(),
       address: extractedText.match(/Adress:\s*([^\n]+)/i)?.[1]?.trim(),
       phone: extractedText.match(/Phone:\s*([^\n]+)/i)?.[1]?.trim(),
       medicalCondition: extractedText.match(/Medical Condition:\s*([^\n]+)/i)?.[1]?.trim(),
-      preferredPremium: extractedText.match(/Preferred Premium:\s*([^\n]+)/i)?.[1]?.trim()
+      preferredPremium: extractedText.match(/Preferred Premium:\s*([^\n]+)/i)?.[1]?.trim(),
     };
 
+    // Convert DOB to ISO string
     let dateOfBirth = null;
     if (fields.dob) {
-      const cleanDOB = fields.dob.replace(/[^\d-]/g, '');
-      const [day, month, year] = cleanDOB.split('-');
+      const cleanDOB = fields.dob.replace(/[^\d-]/g, "");
+      const [day, month, year] = cleanDOB.split("-");
       if (day && month && year) {
         const dateObj = new Date(`${year}-${month}-${day}`);
         if (!isNaN(dateObj.getTime())) {
@@ -68,9 +75,10 @@ export async function POST(req: Request) {
       address: fields.address,
       phone: fields.phone,
       medicalCondition: fields.medicalCondition,
-      preferredPremium: fields.preferredPremium
+      preferredPremium: fields.preferredPremium,
     };
 
+    // Check for missing fields
     const missingFields = Object.entries(extractedFields)
       .filter(([_, value]) => !value)
       .map(([name]) => name);
@@ -82,7 +90,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // Step 1: Fetch the policy_holder_id from the UserUploads table
+    // Step 1: Get policy_holder_id from UserUploads by file_path and status "Approved"
     const userUpload = await prisma.userUploads.findFirst({
       where: { file_path: relativePath, status: "Approved" },
       select: { policy_holder_id: true },
@@ -95,7 +103,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // Step 2: Fetch the agent_id from the PolicyHolder table using policy_holder_id
+    // Step 2: Get agent_id from PolicyHolder
     const policyHolder = await prisma.policyHolder.findUnique({
       where: { id: userUpload.policy_holder_id },
       select: { agent_id: true },
@@ -103,7 +111,7 @@ export async function POST(req: Request) {
 
     const agentId = policyHolder?.agent_id || null;
 
-    // Step 3: Create the new OCR Application with agent_id
+    // Step 3: Create new OCR Application record
     const applicationNo = `APP-${Math.floor(100000 + Math.random() * 900000)}`;
 
     const newApplication = await prisma.ocrApplication.create({
@@ -116,16 +124,17 @@ export async function POST(req: Request) {
         medicalCondition: extractedFields.medicalCondition!,
         preferredPremium: extractedFields.preferredPremium!,
         filePath: relativePath,
-        agent_id: agentId, // Associate the agent with the application
+        agent_id: agentId,
       },
     });
 
-    // Update the UserUploads status to "Generated" after OCR processing
+    // Step 4: Update UserUploads status to "Generated"
     await prisma.userUploads.updateMany({
       where: { file_path: relativePath, status: "Approved" },
       data: { status: "Generated" },
     });
 
+    // Return newly created OCR Application
     return NextResponse.json(newApplication, { status: 201 });
 
   } catch (error) {
