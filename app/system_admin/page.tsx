@@ -26,7 +26,7 @@ const SystemAdminLanding: React.FC = () => {
         setIsAuthenticated(true);
       } else {
         setIsAuthenticated(false);
-        router.push('./'); 
+        router.push('/system_admin'); 
       }
       setLoading(false);
     };

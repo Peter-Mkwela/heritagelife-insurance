@@ -63,7 +63,7 @@ const ClaimsPage = () => {
         setError(data.message || 'Failed to fetch updated claims');
       }
     } catch {
-      setError('An error occurred while refreshing claims.');
+      
     }
   };
 
@@ -144,42 +144,47 @@ const ClaimsPage = () => {
   };
 
   // Handle generate action and OCR processing
-  const handleGenerate = async (id: number, filePath: string) => {
-    setError('');
-    setSuccessMessage('');
-    setLoading(true);
-    setProcessingId(id); // Set processingId
-  
-    try {
-      const fileUrl = `http://localhost:3000${filePath.replace('/public', '')}`;
-  
-      const res = await fetch('/api/perform-ocr', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileUrl, claimId: id }),
-      });
-  
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error || 'Failed to process OCR.');
-        return;
-      }
-  
-      // Update state: Show "View" button after successful claim generation
-      setClaims((prev) =>
-        prev.map((claim) =>
-          claim.id === id ? { ...claim, status: 'Generated', ocr_claim_id: data.id } : claim
-        )
-      );
-  
-      setSuccessMessage('Claim generated successfully.');
-    } catch (err) {
-      setError('An error occurred while generating the claim.');
-    } finally {
-      setLoading(false);
-      setProcessingId(null); // Clear processingId
+  // Handle generate action and OCR processing
+const handleGenerate = async (id: number, filePath: string) => {
+  setError('');
+  setSuccessMessage('');
+  setLoading(true);
+  setProcessingId(id);
+
+  try {
+    // filePath is already a full public URL from UploadThing, so use it directly
+    const fileUrl = filePath;
+
+    const res = await fetch('/api/perform-ocr', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fileUrl, claimId: id }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      setError(data.error || 'Failed to process OCR.');
+      return;
     }
-  };
+
+    // Update claim state to show View button
+    setClaims((prev) =>
+      prev.map((claim) =>
+        claim.id === id ? { ...claim, status: 'Generated', ocr_claim_id: data.id } : claim
+      )
+    );
+
+    setSuccessMessage('Claim generated successfully.');
+  } catch (err) {
+    console.error(err);
+    setError('An error occurred while generating the claim.');
+  } finally {
+    setLoading(false);
+    setProcessingId(null);
+  }
+};
+
   
 
 
