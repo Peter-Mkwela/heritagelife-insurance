@@ -1,95 +1,103 @@
 'use client';
-import { useState, useEffect } from 'react';
+
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import CustomUploadButton from '../../components/CustomUploadButton';
+import { toast, Toaster } from 'react-hot-toast';
+import { generateReactHelpers } from '@uploadthing/react';
+import type { OurFileRouter } from '@/app/api/uploadthing/core';
+
+const { useUploadThing } = generateReactHelpers<OurFileRouter>();
 
 const ApplyPage = () => {
   const [email, setEmail] = useState('');
-  const [file, setFile] = useState<File | null>(null);
+  const [fileUrl, setFileUrl] = useState('');
+  const [fileName, setFileName] = useState('');
   const [agents, setAgents] = useState<{ id: number; full_name: string }[]>([]);
-  const [selectedAgent, setSelectedAgent] = useState<string>(''); // Default to empty
-  const [error, setError] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
+  const [selectedAgent, setSelectedAgent] = useState<string>('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);  // NEW
   const router = useRouter();
 
-  // Fetch Agents from API
+  const { startUpload, isUploading } = useUploadThing('policyholderUpload');
+
+  useEffect(() => {
+    const storedEmail = localStorage.getItem('policyholderEmail');
+    if (storedEmail) setEmail(storedEmail);
+  }, []);
+
   useEffect(() => {
     const fetchAgents = async () => {
       try {
         const res = await fetch('/api/get_agents');
         const data = await res.json();
-        if (res.ok) {
-          setAgents(data.agents);
-        } else {
-          console.error('Failed to fetch agents:', data.message);
-        }
-      } catch (error) {
-    
+        if (res.ok) setAgents(data.agents);
+      } catch {
+        toast.error('Failed to fetch agents');
       }
     };
-
     fetchAgents();
   }, []);
 
-  // Autofill email from localStorage
-  useEffect(() => {
-    const storedEmail = localStorage.getItem('policyholderEmail');
-    if (storedEmail) {
-      setEmail(storedEmail);
-    }
-  }, []);
-
-  // Handle File Upload
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      setFile(e.target.files[0]);
-    }
-  };
-
-  // Handle Form Submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!email || !file) {
-      setError('Please provide your email and upload a filled form.');
+    if (!email || !selectedFile) {
+      toast.error('Please upload your form and enter your email');
       return;
     }
 
-    console.log('Selected agent:', selectedAgent);
-
-    const formData = new FormData();
-    formData.append('email', email);
-    formData.append('file', file);
-    formData.append('agent_id', selectedAgent || 'null'); // Pass agent_id (null if Direct Office)
+    setIsSubmitting(true);  // START submitting
 
     try {
-      const res = await fetch('/api/upload_policy', {
+      const uploadRes = await startUpload([selectedFile]);
+
+      if (!uploadRes || uploadRes.length === 0) {
+        toast.error('File upload failed');
+        setIsSubmitting(false);
+        return;
+      }
+
+      const { url, name } = uploadRes[0];
+      setFileUrl(url);
+      setFileName(name);
+
+      const res = await fetch('/api/upload_policy_thing', {
         method: 'POST',
-        body: formData,
+        body: JSON.stringify({
+          email,
+          fileUrl: url,
+          fileName: name,
+          agent_id: selectedAgent || 'null',
+        }),
+        headers: { 'Content-Type': 'application/json' },
       });
 
       const data = await res.json();
-
       if (res.ok) {
-        setSuccessMessage('Application submitted successfully!');
-        setError('');
+        toast.success('File submitted successfully!');  // SUCCESS message here
+        setFileUrl('');
+        setFileName('');
+        setSelectedFile(null);
       } else {
-        setError(data.message);
+        toast.error(data.message || 'Upload failed');
       }
-    } catch (error) {
-      setError('Error submitting the application.');
+    } catch (err) {
+      console.error(err);
+      toast.error('Submission failed');
+    } finally {
+      setIsSubmitting(false);  // END submitting
     }
   };
 
   return (
     <div className="users-container">
+      <Toaster position="top-right" />
       <header className="style-strip">
         <h1 className="header-title">Apply for a Policy</h1>
       </header>
 
       <div className="form container">
-        {error && <p className="add-user-error">{error}</p>}
-        {successMessage && <p className="add-user-success">{successMessage}</p>}
-
         <a href="/Policy-application.pdf" download>
           <button type="button" className="add-user-cta-button">
             Download Application Form
@@ -98,10 +106,9 @@ const ApplyPage = () => {
 
         <form onSubmit={handleSubmit} className="add-user-form">
           <div className="form-group">
-            <label htmlFor="email" className="add-user-label">Your Email:</label>
+            <label className="add-user-label">Your Email:</label>
             <input
               type="email"
-              id="email"
               className="add-user-input"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -109,11 +116,9 @@ const ApplyPage = () => {
             />
           </div>
 
-          {/* Agent Selection Dropdown */}
           <div className="form-group">
-            <label htmlFor="agent" className="add-user-label">Select Agent (or Direct Office):</label>
+            <label className="add-user-label">Select Agent (or Direct Office):</label>
             <select
-              id="agent"
               className="add-user-input"
               value={selectedAgent}
               onChange={(e) => setSelectedAgent(e.target.value)}
@@ -128,23 +133,23 @@ const ApplyPage = () => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="file" className="add-user-label">Upload Filled Form (PDF/Image):</label>
-            <input
-              type="file"
-              id="file"
-              className="add-user-input"
-              accept="application/pdf, image/*"
-              onChange={handleFileUpload}
-              required
-            />
+            <label className="add-user-label">Upload Filled Form (PDF/Image):</label>
+            <CustomUploadButton onFileSelected={setSelectedFile} />
           </div>
 
           <div className="add-user-button-group">
-            <button type="submit" className="add-user-cta-button">Submit Application</button>
+            <button
+              type="submit"
+              className="add-user-cta-button"
+              disabled={isSubmitting || isUploading}  // disable button while uploading/submitting
+            >
+              {isSubmitting ? 'Submitting...' : 'Submit Application'}
+            </button>
             <button
               type="button"
               onClick={() => router.push('/policyholder/main/')}
               className="add-user-back-button"
+              disabled={isSubmitting}
             >
               Back
             </button>
