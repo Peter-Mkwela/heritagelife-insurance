@@ -229,14 +229,15 @@ if (!fileUrl.startsWith('http')) {
             {uploads.map((upload) => (
               <tr key={upload.id}>
                 <td>
-                  <a
-                    href={`/uploads/${upload.file_name}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    {upload.file_name}
-                  </a>
-                </td>
+  <a
+    href={upload.file_path}
+    target="_blank"
+    rel="noopener noreferrer"
+  >
+    {upload.file_name}
+  </a>
+</td>
+
                 <td>{new Date(upload.uploaded_at).toLocaleString()}</td>
                 <td>{upload.policyHolder.email}</td>
                 <td>

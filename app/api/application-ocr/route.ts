@@ -2,37 +2,29 @@
 import { NextResponse } from "next/server";
 import axios from "axios";
 import prisma from "../../../lib/prisma";
-import fs from "fs";
-import path from "path";
 import FormData from "form-data";
+import path from "path";
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    const { fileUrl } = body;
+    const { fileUrl } = await req.json();
 
     if (!fileUrl) {
-      return NextResponse.json({ error: "File path is required." }, { status: 400 });
+      return NextResponse.json({ error: "File URL is required." }, { status: 400 });
     }
 
-    // Strip domain to get relative path like '/uploads/filename.pdf'
-    const relativePath = fileUrl.replace(/^https?:\/\/[^\/]+/, "");
+    // Fetch the file from UploadThing URL as a stream
+    const response = await axios.get(fileUrl, { responseType: "stream" });
 
-    // Full local file path on server
-    const filePath = path.join(process.cwd(), "public", relativePath);
-
-    if (!fs.existsSync(filePath)) {
-      return NextResponse.json({ error: `File not found at ${filePath}` }, { status: 404 });
-    }
-
-    // Prepare form data for OCR API
+    // Prepare form data for OCR.space API
     const formData = new FormData();
-    formData.append("file", fs.createReadStream(filePath));
+    formData.append("file", response.data, { filename: path.basename(fileUrl) });
     formData.append("apikey", "K89337592188957");
     formData.append("language", "eng");
     formData.append("OCREngine", "2");
     formData.append("isTable", "true");
 
+    // Send to OCR.space
     const ocrResponse = await axios.post("https://api.ocr.space/parse/image", formData, {
       headers: { ...formData.getHeaders() },
     });
@@ -46,21 +38,22 @@ export async function POST(req: Request) {
 
     const extractedText = ocrResponse.data.ParsedResults[0].ParsedText;
 
-    // Extract required fields via regex
+    // Extract fields using regex (adjust regex to your actual text format)
     const fields = {
       fullName: extractedText.match(/FullName:\s*([^\n]+)/i)?.[1]?.trim().replace(/[`_]/g, "'"),
       dob: extractedText.match(/Date of Birth:\s*([^\n(]+)/i)?.[1]?.trim(),
-      address: extractedText.match(/Adress:\s*([^\n]+)/i)?.[1]?.trim(),
+      address: extractedText.match(/Address:\s*([^\n]+)/i)?.[1]?.trim(),
       phone: extractedText.match(/Phone:\s*([^\n]+)/i)?.[1]?.trim(),
       medicalCondition: extractedText.match(/Medical Condition:\s*([^\n]+)/i)?.[1]?.trim(),
       preferredPremium: extractedText.match(/Preferred Premium:\s*([^\n]+)/i)?.[1]?.trim(),
     };
 
-    // Convert DOB to ISO string
+    // Parse DOB to ISO string if valid
     let dateOfBirth = null;
     if (fields.dob) {
-      const cleanDOB = fields.dob.replace(/[^\d-]/g, "");
-      const [day, month, year] = cleanDOB.split("-");
+      // You can adjust date parsing logic as needed
+      const cleanDOB = fields.dob.replace(/[^\d-]/g, '');
+      const [day, month, year] = cleanDOB.split('-');
       if (day && month && year) {
         const dateObj = new Date(`${year}-${month}-${day}`);
         if (!isNaN(dateObj.getTime())) {
@@ -78,7 +71,7 @@ export async function POST(req: Request) {
       preferredPremium: fields.preferredPremium,
     };
 
-    // Check for missing fields
+    // Check for missing required fields
     const missingFields = Object.entries(extractedFields)
       .filter(([_, value]) => !value)
       .map(([name]) => name);
@@ -90,9 +83,12 @@ export async function POST(req: Request) {
       );
     }
 
-    // Step 1: Get policy_holder_id from UserUploads by file_path and status "Approved"
+    // IMPORTANT: Here you must have some way to identify the UserUploads record linked to this fileUrl
+    // For UploadThing URLs, you might want to store the UploadThing URL in your UserUploads.file_path field
+    // So let's query by file_path matching fileUrl
+
     const userUpload = await prisma.userUploads.findFirst({
-      where: { file_path: relativePath, status: "Approved" },
+      where: { file_path: fileUrl, status: "Approved" },
       select: { policy_holder_id: true },
     });
 
@@ -103,7 +99,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // Step 2: Get agent_id from PolicyHolder
+    // Get the agent_id from PolicyHolder
     const policyHolder = await prisma.policyHolder.findUnique({
       where: { id: userUpload.policy_holder_id },
       select: { agent_id: true },
@@ -111,9 +107,10 @@ export async function POST(req: Request) {
 
     const agentId = policyHolder?.agent_id || null;
 
-    // Step 3: Create new OCR Application record
+    // Create applicationNo (random 6-digit number prefixed)
     const applicationNo = `APP-${Math.floor(100000 + Math.random() * 900000)}`;
 
+    // Create the OCR Application record
     const newApplication = await prisma.ocrApplication.create({
       data: {
         applicationNo,
@@ -123,25 +120,21 @@ export async function POST(req: Request) {
         phone: extractedFields.phone!,
         medicalCondition: extractedFields.medicalCondition!,
         preferredPremium: extractedFields.preferredPremium!,
-        filePath: relativePath,
+        filePath: fileUrl,
         agent_id: agentId,
       },
     });
 
-    // Step 4: Update UserUploads status to "Generated"
+    // Update UserUploads status to "Generated"
     await prisma.userUploads.updateMany({
-      where: { file_path: relativePath, status: "Approved" },
+      where: { file_path: fileUrl, status: "Approved" },
       data: { status: "Generated" },
     });
 
-    // Return newly created OCR Application
+    // Return the new application
     return NextResponse.json(newApplication, { status: 201 });
-
   } catch (error) {
-    console.error("API Error:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 }
-    );
+    console.error("OCR API error:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
