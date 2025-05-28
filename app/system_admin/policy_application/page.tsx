@@ -118,84 +118,86 @@ const ApprovalsPage = () => {
   };
 
   // Handle generate action
-const handleGenerate = async (id: number, filePath: string) => {
-  setError('');
-  setSuccessMessage('');
-  setLoading(true);
-  setProcessingId(id); // Set processingId
-
-  try {
-    const fileUrl = filePath;
-if (!fileUrl.startsWith('http')) {
-  setError('Invalid file URL.');
-  return;
-}
-
-    // Step 1: Send file to OCR API
-    const ocrRes = await fetch('/api/application-ocr', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fileUrl }),
-    });
-
-    const ocrData = await ocrRes.json();
-    console.log("OCR API Response:", ocrData);
-
-    if (!ocrRes.ok || !ocrData.id) {
-      setError(ocrData.error || 'Failed to process OCR.');
-      return;
+  const handleGenerate = async (id: number, filePath: string, fileName: string) => {
+    setError('');
+    setSuccessMessage('');
+    setLoading(true);
+    setProcessingId(id); // Set processingId
+  
+    try {
+      const fileUrl = `${filePath}?filename=${encodeURIComponent(fileName)}`;
+  
+      if (!fileUrl.startsWith('http')) {
+        setError('Invalid file URL.');
+        return;
+      }
+  
+      // Step 1: Send file to OCR API
+      const ocrRes = await fetch('/api/application-ocr', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileUrl }),
+      });
+  
+      const ocrData = await ocrRes.json();
+      console.log("OCR API Response:", ocrData);
+  
+      if (!ocrRes.ok || !ocrData.id) {
+        setError(ocrData.error || 'Failed to process OCR.');
+        return;
+      }
+  
+      const applicationId = ocrData.id;
+  
+      // Step 2: Update userUploads with OCR application ID
+      const updateRes = await fetch('/api/update-application-id', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, ocrApplicationId: applicationId, action: 'generate' }),
+      });
+  
+      const updateData = await updateRes.json();
+      console.log("Update API Response:", updateData);
+  
+      if (!updateRes.ok) {
+        setError(updateData.error || 'Failed to update application ID.');
+        return;
+      }
+  
+      // Step 3: Create a new policy record
+      const createPolicyRes = await fetch('/api/create-policy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userUploadId: id }),
+      });
+  
+      const policyData = await createPolicyRes.json();
+      console.log("Policy Creation Response:", policyData);
+  
+      if (!createPolicyRes.ok) {
+        setError(policyData.error || 'Failed to create policy.');
+        return;
+      }
+  
+      // Step 4: Update UI with the new state
+      setUploads((prev) =>
+        prev.map((upload) =>
+          upload.id === id
+            ? { ...upload, status: 'Generated', ocr_application_id: applicationId }
+            : upload
+        )
+      );
+  
+      setSuccessMessage('Application and Policy generated successfully.');
+    } catch (err) {
+      console.error('Error occurred:', err);
+      setError('An error occurred during the generate process.');
+    } finally {
+      setLoading(false);
+      setProcessingId(null); // Clear processingId
     }
-
-    const applicationId = ocrData.id;
-
-    // Step 2: Update userUploads with OCR application ID
-    const updateRes = await fetch('/api/update-application-id', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, ocrApplicationId: applicationId, action: 'generate' }),
-    });
-
-    const updateData = await updateRes.json();
-    console.log("Update API Response:", updateData);
-
-    if (!updateRes.ok) {
-      setError(updateData.error || 'Failed to update application ID.');
-      return;
-    }
-
-    // Step 3: Create a new policy record
-    const createPolicyRes = await fetch('/api/create-policy', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userUploadId: id }),
-    });
-
-    const policyData = await createPolicyRes.json();
-    console.log("Policy Creation Response:", policyData);
-
-    if (!createPolicyRes.ok) {
-      setError(policyData.error || 'Failed to create policy.');
-      return;
-    }
-
-    // Step 4: Update UI with the new state
-    setUploads((prev) =>
-      prev.map((upload) =>
-        upload.id === id
-          ? { ...upload, status: 'Generated', ocr_application_id: applicationId }
-          : upload
-      )
-    );
-
-    setSuccessMessage('Application and Policy generated successfully.');
-  } catch (err) {
-    console.error('Error occurred:', err);
-    setError('An error occurred during the generate process.');
-  } finally {
-    setLoading(false);
-    setProcessingId(null); // Clear processingId
-  }
-};
+  };
+  
 
 
 
@@ -271,7 +273,7 @@ if (!fileUrl.startsWith('http')) {
                     <div className="action-container">
                       <button
                         className="generate-button"
-                        onClick={() => handleGenerate(upload.id, upload.file_path)}
+                        onClick={() => handleGenerate(upload.id, upload.file_path, upload.file_name)}
                         disabled={processingId === upload.id}
                       >
                         {processingId === upload.id ? 'Generating...' : 'Generate'}

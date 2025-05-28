@@ -3,7 +3,6 @@ import { NextResponse } from "next/server";
 import axios from "axios";
 import prisma from "../../../lib/prisma";
 import FormData from "form-data";
-import path from "path";
 
 export async function POST(req: Request) {
   try {
@@ -13,12 +12,30 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "File URL is required." }, { status: 400 });
     }
 
-    // Fetch the file from UploadThing URL as a stream
+    // Fetch file from UploadThing URL as a stream
     const response = await axios.get(fileUrl, { responseType: "stream" });
+    const contentType = response.headers['content-type'];
 
-    // Prepare form data for OCR.space API
+    // Map MIME types to file extensions
+    const mimeToExt: Record<string, string> = {
+      'application/pdf': 'pdf',
+      'image/jpeg': 'jpg',
+      'image/png': 'png',
+    };
+
+    const extension = mimeToExt[contentType];
+    if (!extension) {
+      return NextResponse.json({
+        error: "Unsupported file type",
+        details: [`Detected Content-Type: ${contentType}`, "Only PDF, JPG, and PNG are supported."],
+      }, { status: 400 });
+    }
+
+    const finalFileName = `uploaded.${extension}`;
+
+    // Prepare form data for OCR.space
     const formData = new FormData();
-    formData.append("file", response.data, { filename: path.basename(fileUrl) });
+    formData.append("file", response.data, { filename: finalFileName });
     formData.append("apikey", "K89337592188957");
     formData.append("language", "eng");
     formData.append("OCREngine", "2");
@@ -38,7 +55,6 @@ export async function POST(req: Request) {
 
     const extractedText = ocrResponse.data.ParsedResults[0].ParsedText;
 
-    // Extract fields using regex (adjust regex to your actual text format)
     const fields = {
       fullName: extractedText.match(/FullName:\s*([^\n]+)/i)?.[1]?.trim().replace(/[`_]/g, "'"),
       dob: extractedText.match(/Date of Birth:\s*([^\n(]+)/i)?.[1]?.trim(),
@@ -51,7 +67,6 @@ export async function POST(req: Request) {
     // Parse DOB to ISO string if valid
     let dateOfBirth = null;
     if (fields.dob) {
-      // You can adjust date parsing logic as needed
       const cleanDOB = fields.dob.replace(/[^\d-]/g, '');
       const [day, month, year] = cleanDOB.split('-');
       if (day && month && year) {
@@ -71,7 +86,6 @@ export async function POST(req: Request) {
       preferredPremium: fields.preferredPremium,
     };
 
-    // Check for missing required fields
     const missingFields = Object.entries(extractedFields)
       .filter(([_, value]) => !value)
       .map(([name]) => name);
@@ -83,10 +97,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // IMPORTANT: Here you must have some way to identify the UserUploads record linked to this fileUrl
-    // For UploadThing URLs, you might want to store the UploadThing URL in your UserUploads.file_path field
-    // So let's query by file_path matching fileUrl
-
+    // Look up associated policy holder via file URL
     const userUpload = await prisma.userUploads.findFirst({
       where: { file_path: fileUrl, status: "Approved" },
       select: { policy_holder_id: true },
@@ -99,18 +110,16 @@ export async function POST(req: Request) {
       );
     }
 
-    // Get the agent_id from PolicyHolder
+    // Get the agent ID from the policy holder
     const policyHolder = await prisma.policyHolder.findUnique({
       where: { id: userUpload.policy_holder_id },
       select: { agent_id: true },
     });
 
     const agentId = policyHolder?.agent_id || null;
-
-    // Create applicationNo (random 6-digit number prefixed)
     const applicationNo = `APP-${Math.floor(100000 + Math.random() * 900000)}`;
 
-    // Create the OCR Application record
+    // Save OCR application
     const newApplication = await prisma.ocrApplication.create({
       data: {
         applicationNo,
@@ -125,14 +134,13 @@ export async function POST(req: Request) {
       },
     });
 
-    // Update UserUploads status to "Generated"
     await prisma.userUploads.updateMany({
       where: { file_path: fileUrl, status: "Approved" },
       data: { status: "Generated" },
     });
 
-    // Return the new application
     return NextResponse.json(newApplication, { status: 201 });
+
   } catch (error) {
     console.error("OCR API error:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
