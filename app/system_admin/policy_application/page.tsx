@@ -125,13 +125,11 @@ const handleGenerate = async (id: number, filePath: string) => {
   setProcessingId(id); // Set processingId
 
   try {
-    const fileName = filePath.split('/').pop();
-    if (!fileName) {
-      setError('Invalid file path.');
-      return;
-    }
-
-    const fileUrl = `http://localhost:3000/uploads/${fileName}`;
+    const fileUrl = filePath;
+if (!fileUrl.startsWith('http')) {
+  setError('Invalid file URL.');
+  return;
+}
 
     // Step 1: Send file to OCR API
     const ocrRes = await fetch('/api/application-ocr', {
