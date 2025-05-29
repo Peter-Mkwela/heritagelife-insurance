@@ -1,6 +1,11 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+
+const searchParams = useSearchParams();
+const id = searchParams.get("id");
+
 
 type Claim = {
   id: number;
@@ -23,7 +28,7 @@ const ViewClaimPage = () => {
     const fetchClaim = async () => {
       if (!params.id) return;
       try {
-        const res = await fetch(`/api/get-ocr-claims/${params.id}`);
+        const res = await fetch(`/api/get-ocr-claims?id=${params.id}`);
         const data = await res.json();
 
         if (res.ok) {
