@@ -283,7 +283,8 @@ const ApprovalsPage = () => {
                     <div className="action-container">
                       <button
                         className="view-button"
-                        onClick={() => router.push(`/system_admin/view-applications/${upload.ocr_application_id}`)}
+                        onClick={() => router.push(`/system_admin/view-applications?id=${upload.ocr_application_id}`)}
+
                       >
                         View
                       </button>

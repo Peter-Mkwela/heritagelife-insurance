@@ -3,6 +3,11 @@
 'use client'
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+
+const searchParams = useSearchParams();
+const id = searchParams.get("id");
+
 
 type Application = {
   id: number;
@@ -29,7 +34,7 @@ const ViewApplicationPage = () => {
 
       setLoading(true);
       try {
-        const res = await fetch(`/api/get-generated-applications/${id}`);
+        const res = await fetch(`/api/get-generated-applications?id=${id}`);
         const data = await res.json();
 
         if (!res.ok) {
