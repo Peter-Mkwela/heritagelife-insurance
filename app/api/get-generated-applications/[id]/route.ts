@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
-export async function GET(
-  req: NextRequest,
-  context: { params: { id: string } }
-) {
-  const { id } = context.params;
-  const parsedId = parseInt(id);
+export async function GET(req: NextRequest) {
+  const url = new URL(req.url);
+  const pathParts = url.pathname.split('/');
+  const id = pathParts[pathParts.length - 1]; // Extract dynamic [id] from the URL
 
+  const parsedId = parseInt(id);
   if (isNaN(parsedId)) {
     return NextResponse.json({ error: "Invalid application ID." }, { status: 400 });
   }
@@ -23,7 +22,7 @@ export async function GET(
 
     return NextResponse.json(application, { status: 200 });
   } catch (error) {
-    console.error("Server Error:", error);
+    console.error("Server error:", error);
     return NextResponse.json({ error: "Server error." }, { status: 500 });
   }
 }
