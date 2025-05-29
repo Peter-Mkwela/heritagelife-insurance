@@ -1,9 +1,6 @@
-"use client";
-import { useEffect, useState } from "react";
-import { useRouter, useParams } from "next/navigation";
-import { useSearchParams } from "next/navigation";
-
-
+'use client';
+import { useEffect, useState } from 'react';
+import { useRouter, useParams } from 'next/navigation';
 
 type Claim = {
   id: number;
@@ -17,32 +14,35 @@ type Claim = {
 };
 
 const ViewClaimPage = () => {
-  const [claim, setClaim] = useState<Claim | null>(null);
-  const [error, setError] = useState<string>("");
+  const { id } = useParams();
   const router = useRouter();
-  const params = useParams(); // Extracts { id } from the URL
-  const searchParams = useSearchParams();
-const id = searchParams.get("id");
+
+  const [claim, setClaim] = useState<Claim | null>(null);
+  const [error, setError] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     const fetchClaim = async () => {
-      if (!params.id) return;
+      if (!id) return;
+
       try {
-        const res = await fetch(`/api/get-ocr-claims?id=${params.id}`);
+        const res = await fetch(`/api/get-ocr-claims?id=${id}`);
         const data = await res.json();
 
         if (res.ok) {
           setClaim(data);
         } else {
-          setError(data.error || "Failed to fetch claim");
+          setError(data.error || 'Failed to fetch claim');
         }
       } catch (err) {
-        setError("Failed to fetch claim");
+        setError('Failed to fetch claim');
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchClaim();
-  }, [params.id]);
+  }, [id]);
 
   const handleBack = () => {
     router.back();
@@ -61,7 +61,9 @@ const id = searchParams.get("id");
 
       {error && <p className="error-message">{error}</p>}
 
-      {claim ? (
+      {loading ? (
+        <p>Loading claim details...</p>
+      ) : claim ? (
         <div className="claim-details-container">
           <table>
             <thead>
@@ -84,17 +86,16 @@ const id = searchParams.get("id");
                 <td>{claim.cause}</td>
                 <td>{new Date(claim.DOD).toLocaleDateString()}</td>
                 <td>{new Date(claim.created_at).toLocaleString()}</td>
-
               </tr>
             </tbody>
           </table>
         </div>
       ) : (
-        <div>Loading claim details...</div>
+        <div>No claim found.</div>
       )}
     </div>
   );
 };
 
 export default ViewClaimPage;
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic';

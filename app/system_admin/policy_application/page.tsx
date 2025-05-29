@@ -282,12 +282,12 @@ const ApprovalsPage = () => {
                   ) : upload.status === 'Generated' ? (
                     <div className="action-container">
                       <button
-                        className="view-button"
-                        onClick={() => router.push(`/system_admin/view-applications?id=${upload.ocr_application_id}`)}
+  className="view-button"
+  onClick={() => router.push(`/system_admin/view-applications/${upload.ocr_application_id}`)}
+>
+  View
+</button>
 
-                      >
-                        View
-                      </button>
                     </div>
                   ) : (
                     <button

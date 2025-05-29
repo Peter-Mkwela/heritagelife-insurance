@@ -1,12 +1,6 @@
-//system_admin/view-applications/page.tsx
-
-'use client'
-import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
-import { useSearchParams } from "next/navigation";
-
-
-
+'use client';
+import { useEffect, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 
 type Application = {
   id: number;
@@ -21,30 +15,28 @@ type Application = {
 };
 
 const ViewApplicationPage = () => {
-  //const { id } = useParams();
-  const searchParams = useSearchParams();
-const id = searchParams.get("id");
+  const { id } = useParams();
+  const router = useRouter();
 
   const [application, setApplication] = useState<Application | null>(null);
-  const [error, setError] = useState<string>("");
+  const [error, setError] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     const fetchApplication = async () => {
       if (!id) return;
 
-      setLoading(true);
       try {
         const res = await fetch(`/api/get-generated-applications?id=${id}`);
         const data = await res.json();
 
         if (!res.ok) {
-          throw new Error(data.error || "Failed to fetch application.");
+          throw new Error(data.error || 'Failed to fetch application.');
         }
 
         setApplication(data);
       } catch (err) {
-        setError("An error occurred while fetching data.");
+        setError('An error occurred while fetching data.');
       } finally {
         setLoading(false);
       }
@@ -53,21 +45,22 @@ const id = searchParams.get("id");
     fetchApplication();
   }, [id]);
 
-  if (loading) return <p>Loading...</p>;
-  if (error) return <p className="error-message">{error}</p>;
-
   return (
     <div className="view-application-container">
       <header className="style-strip">
         <h1 className="header-title">View Generated Application</h1>
         <div className="button-container">
-          <button onClick={() => window.history.back()} className="back-button">
+          <button onClick={() => router.back()} className="back-button">
             Back
           </button>
         </div>
       </header>
 
-      {application ? (
+      {loading ? (
+        <p>Loading...</p>
+      ) : error ? (
+        <p className="error-message">{error}</p>
+      ) : application ? (
         <table>
           <thead>
             <tr>
@@ -104,5 +97,4 @@ const id = searchParams.get("id");
 };
 
 export default ViewApplicationPage;
-export const dynamic = "force-dynamic";
-
+export const dynamic = 'force-dynamic';

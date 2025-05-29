@@ -272,11 +272,12 @@ const handleGenerate = async (id: number, filePath: string) => {
 <div className="action-container">
   {claim.ocr_claim_id ? (
     <button
-      className="view-button"
-      onClick={() => router.push(`/system_admin/view-claims/${claim.ocr_claim_id}`)}
-    >
-      View
-    </button>
+    className="view-button"
+    onClick={() => router.push(`/system_admin/view-claims/${claim.ocr_claim_id}`)}
+  >
+    View
+  </button>
+  
   ) : (
     <span>No OCR Record</span>
   )}
