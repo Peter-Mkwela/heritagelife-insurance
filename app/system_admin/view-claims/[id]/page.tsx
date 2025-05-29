@@ -78,7 +78,8 @@ const ViewClaimPage = () => {
                 <td>{claim.deceasedName} {claim.deceasedLastName}</td>
                 <td>{claim.cause}</td>
                 <td>{new Date(claim.DOD).toLocaleDateString()}</td>
-                <td>{new Date(claim.created_at).toLocaleString()}</td> 
+                <td>{new Date(claim.created_at).toLocaleString()}</td>
+
               </tr>
             </tbody>
           </table>

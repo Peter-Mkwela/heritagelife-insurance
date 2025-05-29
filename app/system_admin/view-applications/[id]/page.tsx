@@ -2,7 +2,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 
-
 type Application = {
   id: number;
   applicationNo: string;
@@ -18,24 +17,24 @@ type Application = {
 const ViewApplicationPage = () => {
   const { id } = useParams();
 
-  const [applications, setApplications] = useState<Application[]>([]);
+  const [application, setApplication] = useState<Application | null>(null);
   const [error, setError] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    const fetchApplications = async () => {
+    const fetchApplication = async () => {
+      if (!id) return;
+
       setLoading(true);
       try {
-        if (!id) return; // If 'id' is not available, do nothing.
-
-        const res = await fetch(`/api/get-generated-applications?id=${id}`);
+        const res = await fetch(`/api/get-generated-applications/${id}`);
         const data = await res.json();
 
         if (!res.ok) {
           throw new Error(data.error || "Failed to fetch application.");
         }
 
-        setApplications([data.application]); // Fetch and set the specific application
+        setApplication(data);
       } catch (err) {
         setError("An error occurred while fetching data.");
       } finally {
@@ -43,8 +42,8 @@ const ViewApplicationPage = () => {
       }
     };
 
-    fetchApplications();
-  }, [id]); // Re-run the effect when 'id' changes (e.g., when URL changes)
+    fetchApplication();
+  }, [id]);
 
   if (loading) return <p>Loading...</p>;
   if (error) return <p className="error-message">{error}</p>;
@@ -52,9 +51,7 @@ const ViewApplicationPage = () => {
   return (
     <div className="view-application-container">
       <header className="style-strip">
-        <h1 className="header-title">
-          {id ? "View Generated Application" : "All Generated Applications"}
-        </h1>
+        <h1 className="header-title">View Generated Application</h1>
         <div className="button-container">
           <button onClick={() => window.history.back()} className="back-button">
             Back
@@ -62,41 +59,37 @@ const ViewApplicationPage = () => {
         </div>
       </header>
 
-      {applications.length > 0 ? (
-        <div className="application-details">
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Application Number</th>
-                <th>Full Name</th>
-                <th>Date of Birth</th>
-                <th>Address</th>
-                <th>Phone</th>
-                <th>Medical Condition</th>
-                <th>Preferred Premium</th>
-                <th>Created At</th>
-              </tr>
-            </thead>
-            <tbody>
-              {applications.map((app) => (
-                <tr key={app.id}>
-                  <td>{app.id}</td>
-                  <td>{app.applicationNo}</td>
-                  <td>{app.fullName}</td>
-                  <td>{new Date(app.dateOfBirth).toLocaleDateString()}</td>
-                  <td>{app.address}</td>
-                  <td>{app.phone}</td>
-                  <td>{app.medicalCondition}</td>
-                  <td>{app.preferredPremium}</td>
-                  <td>{new Date(app.created_at).toLocaleString()}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      {application ? (
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Application Number</th>
+              <th>Full Name</th>
+              <th>Date of Birth</th>
+              <th>Address</th>
+              <th>Phone</th>
+              <th>Medical Condition</th>
+              <th>Preferred Premium</th>
+              <th>Created At</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>{application.id}</td>
+              <td>{application.applicationNo}</td>
+              <td>{application.fullName}</td>
+              <td>{new Date(application.dateOfBirth).toLocaleDateString()}</td>
+              <td>{application.address}</td>
+              <td>{application.phone}</td>
+              <td>{application.medicalCondition}</td>
+              <td>{application.preferredPremium}</td>
+              <td>{new Date(application.created_at).toLocaleString()}</td>
+            </tr>
+          </tbody>
+        </table>
       ) : (
-        <div>No applications available.</div>
+        <div>No application found.</div>
       )}
     </div>
   );

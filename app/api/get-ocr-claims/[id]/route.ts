@@ -1,10 +1,17 @@
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma'; // Adjust this import to your prisma path
+import prisma from '@/lib/prisma';
 
-export async function GET() {
+// This gets the dynamic `id` from the URL
+export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {
-    // Fetch all OcrClaims with the necessary fields, including created_at
-    const claims = await prisma.ocrClaim.findMany({
+    const claimId = parseInt(params.id);
+    if (isNaN(claimId)) {
+      return NextResponse.json({ error: 'Invalid claim ID' }, { status: 400 });
+    }
+
+    // Fetch the specific claim by ID
+    const claim = await prisma.ocrClaim.findUnique({
+      where: { id: claimId },
       select: {
         id: true,
         claimNo: true,
@@ -15,15 +22,15 @@ export async function GET() {
         DOD: true,
         created_at: true,
       },
-      orderBy: {
-        created_at: 'desc' 
-      }
     });
 
-    // Return the claims as JSON
-    return NextResponse.json(claims);
+    if (!claim) {
+      return NextResponse.json({ error: 'Claim not found' }, { status: 404 });
+    }
+
+    return NextResponse.json(claim);
   } catch (error) {
-    console.error("ERROR: Unable to fetch claims", error);
-    return NextResponse.json({ error: "Unable to fetch claims" }, { status: 500 });
+    console.error("ERROR: Unable to fetch claim", error);
+    return NextResponse.json({ error: "Unable to fetch claim" }, { status: 500 });
   }
 }
