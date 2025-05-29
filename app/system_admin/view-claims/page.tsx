@@ -3,8 +3,6 @@ import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useSearchParams } from "next/navigation";
 
-const searchParams = useSearchParams();
-const id = searchParams.get("id");
 
 
 type Claim = {
@@ -23,6 +21,8 @@ const ViewClaimPage = () => {
   const [error, setError] = useState<string>("");
   const router = useRouter();
   const params = useParams(); // Extracts { id } from the URL
+  const searchParams = useSearchParams();
+const id = searchParams.get("id");
 
   useEffect(() => {
     const fetchClaim = async () => {
@@ -97,3 +97,4 @@ const ViewClaimPage = () => {
 };
 
 export default ViewClaimPage;
+export const dynamic = "force-dynamic";

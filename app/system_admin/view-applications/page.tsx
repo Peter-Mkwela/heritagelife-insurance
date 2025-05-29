@@ -1,12 +1,11 @@
-//system_admin/view-applications/[id]/page.tsx
+//system_admin/view-applications/page.tsx
 
 'use client'
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useSearchParams } from "next/navigation";
 
-const searchParams = useSearchParams();
-const id = searchParams.get("id");
+
 
 
 type Application = {
@@ -22,7 +21,9 @@ type Application = {
 };
 
 const ViewApplicationPage = () => {
-  const { id } = useParams();
+  //const { id } = useParams();
+  const searchParams = useSearchParams();
+const id = searchParams.get("id");
 
   const [application, setApplication] = useState<Application | null>(null);
   const [error, setError] = useState<string>("");
@@ -103,3 +104,5 @@ const ViewApplicationPage = () => {
 };
 
 export default ViewApplicationPage;
+export const dynamic = "force-dynamic";
+
