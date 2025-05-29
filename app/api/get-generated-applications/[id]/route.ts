@@ -1,20 +1,20 @@
-// app/api/get-generated-applications/[id]/route.ts
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
 export async function GET(
-  req: Request,
-  { params }: { params: { id: string } }
+  req: NextRequest,
+  context: { params: { id: string } }
 ) {
-  const id = parseInt(params.id);
+  const { id } = context.params;
+  const parsedId = parseInt(id);
 
-  if (isNaN(id)) {
+  if (isNaN(parsedId)) {
     return NextResponse.json({ error: "Invalid application ID." }, { status: 400 });
   }
 
   try {
     const application = await prisma.ocrApplication.findUnique({
-      where: { id },
+      where: { id: parsedId },
     });
 
     if (!application) {
@@ -23,6 +23,7 @@ export async function GET(
 
     return NextResponse.json(application, { status: 200 });
   } catch (error) {
+    console.error("Server Error:", error);
     return NextResponse.json({ error: "Server error." }, { status: 500 });
   }
 }
