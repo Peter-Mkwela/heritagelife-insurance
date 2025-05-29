@@ -1,28 +1,24 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
-export async function GET(req: NextRequest) {
-  const url = new URL(req.url);
-  const pathParts = url.pathname.split('/');
-  const id = pathParts[pathParts.length - 1]; // Extract dynamic [id] from the URL
-
-  const parsedId = parseInt(id);
-  if (isNaN(parsedId)) {
-    return NextResponse.json({ error: "Invalid application ID." }, { status: 400 });
-  }
-
+export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {
+    const appId = parseInt(params.id);
+    if (isNaN(appId)) {
+      return NextResponse.json({ error: "Invalid application ID." }, { status: 400 });
+    }
+
     const application = await prisma.ocrApplication.findUnique({
-      where: { id: parsedId },
+      where: { id: appId },
     });
 
     if (!application) {
       return NextResponse.json({ error: "Application not found." }, { status: 404 });
     }
 
-    return NextResponse.json(application, { status: 200 });
+    return NextResponse.json(application);
   } catch (error) {
-    console.error("Server error:", error);
+    console.error("Error fetching application:", error);
     return NextResponse.json({ error: "Server error." }, { status: 500 });
   }
 }
