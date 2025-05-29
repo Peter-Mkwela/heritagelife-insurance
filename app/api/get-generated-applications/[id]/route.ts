@@ -1,12 +1,8 @@
-// app/api/get-generated-applications/[id]/route.ts
-
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
-export const dynamic = 'force-dynamic'; // ✅ Required for Prisma + dynamic route
-
 export async function GET(
-  request: Request,
+  req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   const id = parseInt(params.id);
@@ -24,7 +20,7 @@ export async function GET(
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
-    return NextResponse.json(application); // ✅ already correct
+    return NextResponse.json(application);
   } catch (error) {
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
