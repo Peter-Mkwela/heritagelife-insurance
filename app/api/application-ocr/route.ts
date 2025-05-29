@@ -98,10 +98,11 @@ export async function POST(req: Request) {
     }
 
     // Look up associated policy holder via file URL
+    const baseUrl = fileUrl.split('?')[0];
     const userUpload = await prisma.userUploads.findFirst({
-      where: { file_path: fileUrl, status: "Approved" },
-      select: { policy_holder_id: true },
+      where: { file_path: baseUrl, status: "Approved" },
     });
+    
 
     if (!userUpload || !userUpload.policy_holder_id) {
       return NextResponse.json(
