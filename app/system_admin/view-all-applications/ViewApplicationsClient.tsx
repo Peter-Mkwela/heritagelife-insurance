@@ -1,4 +1,4 @@
-
+// app/system_admin/view-all-applications/ViewApplicationsClient.tsx
 "use client";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
